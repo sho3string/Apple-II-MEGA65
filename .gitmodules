@@ -1,3 +1,6 @@
 [submodule "QNICE"]
 	path = M2M/QNICE
 	url = https://github.com/sy2002/QNICE-FPGA
+[submodule "CORE/Apple-II_MiSTer"]
+	path = CORE/Apple-II_MiSTer
+	url = https://github.com/sho3string/Apple-II_MiSTer
