@@ -226,6 +226,8 @@ architecture synthesis of MEGA65_Core is
 
 signal main_clk               : std_logic;               -- Core main clock
 signal main_rst               : std_logic;
+signal video_clk              : std_logic;               
+signal video_rst              : std_logic;
 
 ---------------------------------------------------------------------------------------------
 -- main_clk (MiSTer core's clock)
@@ -256,81 +258,133 @@ signal qnice_demo_vd_data_o   : std_logic_vector(15 downto 0);
 signal qnice_demo_vd_ce       : std_logic;
 signal qnice_demo_vd_we       : std_logic;
 
+-- Video gen
+signal div                       : std_logic_vector(2 downto 0);
+signal ce_pix                    : std_logic; -- pixel clock 7.15875 PAL - 14.3175 NTSC
+ 
+signal HSync,VSync,HBlank,VBlank : std_logic;
+
+signal ioctl_index               : std_logic_vector(7 downto 0);
+-- ROM devices for the core
+signal qnice_dn_addr             : std_logic_vector(24 downto 0);
+signal qnice_dn_data             : std_logic_vector(7 downto 0);
+signal qnice_dn_wr               : std_logic;
+
+-- Unprocessed video output from the Galaga core
+signal main_video_red      : std_logic_vector(7 downto 0);   
+signal main_video_green    : std_logic_vector(7 downto 0);
+signal main_video_blue     : std_logic_vector(7 downto 0);
+signal main_video_vs       : std_logic;
+signal main_video_hs       : std_logic;
+signal main_video_hblank   : std_logic;
+signal main_video_vblank   : std_logic;
+
+
+signal video_red           : std_logic_vector(7 downto 0);
+signal video_green         : std_logic_vector(7 downto 0);
+signal video_blue          : std_logic_vector(7 downto 0);
+signal video_vblank        : std_logic;
+signal video_hblank        : std_logic;
+signal video_vs            : std_logic;
+signal video_hs            : std_logic;
+signal video_de            : std_logic;
+
+signal gamma_bus           : std_logic_vector(21 downto 0);
+
+signal hdmi_width          : std_logic_vector(11 downto 0);
+signal hdmi_height         : std_logic_vector(11 downto 0);
+
+signal ar                  : std_logic_vector(1 downto 0);
+signal ARX                 : std_logic_vector(11 downto 0);
+signal ARY                 : std_logic_vector(11 downto 0);
+
+    
+
 begin
 
-   hr_core_write_o      <= '0';
-   hr_core_read_o       <= '0';
-   hr_core_address_o    <= (others => '0');
-   hr_core_writedata_o  <= (others => '0');
-   hr_core_byteenable_o <= (others => '0');
-   hr_core_burstcount_o <= (others => '0');
-
-   -- Tristate all expansion port drivers that we can directly control
-   -- @TODO: As soon as we support modules that can act as busmaster, we need to become more flexible here
-   cart_ctrl_oe_o       <= '0';
-   cart_addr_oe_o       <= '0';
-   cart_data_oe_o       <= '0';
-   cart_en_o            <= '0'; -- Disable port
-
-   cart_reset_oe_o      <= '0';
-   cart_game_oe_o       <= '0';
-   cart_exrom_oe_o      <= '0';
-   cart_nmi_oe_o        <= '0';
-   cart_irq_oe_o        <= '0';
-   cart_roml_oe_o       <= '0';
-   cart_romh_oe_o       <= '0';
-
-   -- Default values for all signals
-   cart_phi2_o          <= '0';
-   cart_reset_o         <= '1';
-   cart_dotclock_o      <= '0';
-   cart_game_o          <= '1';
-   cart_exrom_o         <= '1';
-   cart_nmi_o           <= '1';
-   cart_irq_o           <= '1';
-   cart_roml_o          <= '0';
-   cart_romh_o          <= '0';
-   cart_ba_o            <= '0';
-   cart_rw_o            <= '0';
-   cart_io1_o           <= '0';
-   cart_io2_o           <= '0';
-   cart_a_o             <= (others => '0');
-   cart_d_o             <= (others => '0');
-
-   main_joy_1_up_n_o    <= '1';
-   main_joy_1_down_n_o  <= '1';
-   main_joy_1_left_n_o  <= '1';
-   main_joy_1_right_n_o <= '1';
-   main_joy_1_fire_n_o  <= '1';
-   main_joy_2_up_n_o    <= '1';
-   main_joy_2_down_n_o  <= '1';
-   main_joy_2_left_n_o  <= '1';
-   main_joy_2_right_n_o <= '1';
-   main_joy_2_fire_n_o  <= '1';
-
-
-   -- MMCME2_ADV clock generators:
-   --   @TODO YOURCORE:       54 MHz
+    -- Configure the LEDs:
+   -- Power led on and green, drive led always off
+   main_power_led_o       <= '1';
+   main_power_led_col_o   <= x"00FF00";
+   --main_drive_led_o       <= '0';
+   main_drive_led_col_o   <= x"FF0000"; 
+   
+   --ar <= "00";
+   --ARX <= "000000000100" when ar = "00" else std_logic_vector(unsigned(ar) - 1);
+   --ARY <= "000000000011" when ar = "00" else "000000000000";
+   
    clk_gen : entity work.clk
       port map (
          sys_clk_i         => clk_i,           -- expects 100 MHz
-         main_clk_o        => main_clk,        -- CORE's 54 MHz clock
-         main_rst_o        => main_rst         -- CORE's reset, synchronized
+         main_clk_o        => main_clk,        -- CORE's 14.318181 MHz clock
+         main_rst_o        => main_rst,        -- CORE's reset, synchronized
+         video_clk_o       => video_clk,       -- CORE's video clock
+         video_rst_o       => video_rst
+         
       ); -- clk_gen
 
    main_clk_o  <= main_clk;
    main_rst_o  <= main_rst;
-   video_clk_o <= main_clk;
-   video_rst_o <= main_rst;
-
+   video_clk_o <= video_clk;
+   video_rst_o <= video_rst;
+   
+   
+   video_red_o      <= video_red;
+   video_green_o    <= video_green;
+   video_blue_o     <= video_blue;
+   video_vs_o       <= video_vs;
+   video_hs_o       <= video_hs;
+   video_hblank_o   <= video_hblank;
+   video_vblank_o   <= video_vblank;
+   video_ce_o       <= ce_pix;
    ---------------------------------------------------------------------------------------------
    -- main_clk (MiSTer core's clock)
    ---------------------------------------------------------------------------------------------
+   
+   /*i_video_freak : entity work.video_freak
+   port map (
+   
+        CLK_VIDEO      => video_clk,
+        CE_PIXEL       => video_ce_o,
+        VGA_VS         => video_vblank_o,
+        HDMI_WIDTH     => hdmi_width,
+        HDMI_HEIGHT    => hdmi_height,
+        VGA_DE_IN      => video_de,
+        VGA_DE         => open,
+        ARX            => ARX,
+        ARY            => ARY,
+        CROP_SIZE      => "0",
+        CROP_OFF       => "0",
+        SCALE          => "00"
+    );
 
-   -- MEGA65's power led: By default, it is on and glows green when the MEGA65 is powered on.
-   -- We switch it to blue when a long reset is detected and as long as the user keeps pressing the preset button
-   main_power_led_o     <= '1';
-   main_power_led_col_o <= x"0000FF" when main_reset_m2m_i else x"00FF00";
+   i_video_mixer : entity work.video_mixer
+   generic map (
+         LINE_LENGTH    => 580,
+         GAMMA          => 1
+      )
+   port map (
+         CLK_VIDEO      => video_clk,
+         CE_PIXEL       => video_ce_o,
+         ce_pix         => ce_pix,
+         scandoubler    => qnice_scandoubler_o,
+         hq2x           => '0',
+         gamma_bus      => gamma_bus,
+         R              => video_red,
+         G              => video_green,
+         B              => video_blue,
+         HSync          => video_hs,
+	     VSync          => video_vs,
+	     HBlank         => video_hblank,
+	     VBlank         => video_vblank,
+	     HDMI_FREEZE    => '0',
+	     VGA_R          => video_red_o,
+	     VGA_G          => video_green_o,
+         VGA_B          => video_blue_o,
+         VGA_VS         => video_vblank_o,
+         VGA_HS         => video_hblank_o,
+         VGA_DE         => video_de
+   );*/
 
    -- main.vhd contains the actual MiSTer core
    i_main : entity work.main
@@ -339,6 +393,7 @@ begin
       )
       port map (
          clk_main_i           => main_clk,
+         clk_video_i          => video_clk,
          reset_soft_i         => main_reset_core_i,
          reset_hard_i         => main_reset_m2m_i,
          pause_i              => main_pause_core_i,
@@ -346,16 +401,15 @@ begin
          clk_main_speed_i     => CORE_CLK_SPEED,
 
          -- Video output
-         -- This is PAL 720x576 @ 50 Hz (pixel clock 27 MHz), but synchronized to main_clk (54 MHz).
-         video_ce_o           => video_ce_o,
-         video_ce_ovl_o       => video_ce_ovl_o,
-         video_red_o          => video_red_o,
-         video_green_o        => video_green_o,
-         video_blue_o         => video_blue_o,
-         video_vs_o           => video_vs_o,
-         video_hs_o           => video_hs_o,
-         video_hblank_o       => video_hblank_o,
-         video_vblank_o       => video_vblank_o,
+         video_ce_o           => open,
+         video_ce_ovl_o       => open,
+         video_red_o          => main_video_red,
+         video_green_o        => main_video_green,
+         video_blue_o         => main_video_blue,
+         video_vs_o           => main_video_vs,
+         video_hs_o           => main_video_hs,
+         video_hblank_o       => main_video_hblank,
+         video_vblank_o       => main_video_vblank,
 
          -- audio output (pcm format, signed values)
          audio_left_o         => main_audio_left_o,
@@ -381,9 +435,56 @@ begin
          pot1_x_i             => main_pot1_x_i,
          pot1_y_i             => main_pot1_y_i,
          pot2_x_i             => main_pot2_x_i,
-         pot2_y_i             => main_pot2_y_i
+         pot2_y_i             => main_pot2_y_i,
+         
+         ioctl_download       => '1',
+         
+         ioctl_index          => ioctl_index,
+         ioctl_wr             => qnice_dn_wr,
+         ioctl_addr           => qnice_dn_addr,  
+         ioctl_data           => qnice_dn_data,
+         
+         drive_led_o          => main_drive_led_o
       ); -- i_main
 
+    /*       Res        Hz frequency  Vertical frequency   Pixel clock
+    Apple-II 568x192	15.7	      60.2	               14.32
+    */
+    
+    process (video_clk) -- 57.27 MHz
+    begin
+        if rising_edge(video_clk) then
+            ce_pix       <= '0';
+            video_ce_ovl_o <= '0';
+
+            div <= std_logic_vector(unsigned(div) + 1);
+            --if <check menu item > then [ to do ]
+            --ce_pix <= div(2) and div(1) and div(0); -- PAL  - 7.15875 Mhz ( 57.27 / 8 )
+            --else
+            --ce_pix <= div(1) and div(0);                  -- NTSC - 14.3175 Mhz ( 57.27 / 4 )
+            -- end if;
+            ce_pix <= '1' when div(1 downto 0) = "11" else '0'; -- AND lower 2 bits
+            
+            
+            if div(0) = '1' then
+                video_ce_ovl_o <= '1'; -- 28 MHz
+            end if;
+            
+      
+            video_red   <= main_video_red;
+            video_green <= main_video_green;
+            video_blue  <= main_video_blue ;
+            
+            video_hs     <= main_video_hs;
+            video_vs     <= main_video_vs;
+            video_hblank <= main_video_hblank;
+            video_vblank <= main_video_vblank;
+            video_de     <= not (main_video_hblank or main_video_vblank);
+            
+         end if;
+     end process;
+            
+            
    ---------------------------------------------------------------------------------------------
    -- Audio and video settings (QNICE clock domain)
    ---------------------------------------------------------------------------------------------
@@ -417,8 +518,8 @@ begin
    --    "Standard VGA":                     qnice_retro15kHz_o=0 and qnice_csync_o=0
    --    "Retro 15 kHz with HSync and VSync" qnice_retro15kHz_o=1 and qnice_csync_o=0
    --    "Retro 15 kHz with CSync"           qnice_retro15kHz_o=1 and qnice_csync_o=1
-   qnice_retro15kHz_o         <= '0';
-   qnice_csync_o              <= '0';
+   qnice_retro15kHz_o         <= '1';
+   qnice_csync_o              <= '1';
    qnice_osm_cfg_scaling_o    <= (others => '1');
 
    -- ascal filters that are applied while processing the input
@@ -449,20 +550,9 @@ begin
       qnice_dev_data_o     <= x"EEEE";
       qnice_dev_wait_o     <= '0';
 
-      -- Demo core specific: Delete before starting to port your core
-      qnice_demo_vd_ce     <= '0';
-      qnice_demo_vd_we     <= '0';
-
+   
       case qnice_dev_id_i is
 
-         -- Demo core specific stuff: delete before porting your own core
-         when C_DEV_DEMO_VD =>
-            qnice_demo_vd_ce     <= qnice_dev_ce_i;
-            qnice_demo_vd_we     <= qnice_dev_we_i;
-            qnice_dev_data_o     <= qnice_demo_vd_data_o;
-
-         -- @TODO YOUR RAMs or ROMs (e.g. for cartridges) or other devices here
-         -- Device numbers need to be >= 0x0100
 
          when others => null;
       end case;
@@ -495,51 +585,7 @@ begin
    main_drive_led_o     <= '0';
    main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
 
-   i_vdrives : entity work.vdrives
-      generic map (
-         VDNUM       => C_VDNUM
-      )
-      port map
-      (
-         clk_qnice_i       => qnice_clk_i,
-         clk_core_i        => main_clk,
-         reset_core_i      => main_reset_core_i,
-
-         -- Core clock domain
-         img_mounted_o     => open,
-         img_readonly_o    => open,
-         img_size_o        => open,
-         img_type_o        => open,
-         drive_mounted_o   => open,
-
-         -- Cache output signals: The dirty flags can be used to enforce data consistency
-         -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
-         -- The flushing flags can be used to signal the fact that the caches are currently
-         -- flushing to the user, for example using a special color/signal for example
-         -- at the drive led
-         cache_dirty_o     => open,
-         cache_flushing_o  => open,
-
-         -- QNICE clock domain
-         sd_lba_i          => (others => (others => '0')),
-         sd_blk_cnt_i      => (others => (others => '0')),
-         sd_rd_i           => (others => '0'),
-         sd_wr_i           => (others => '0'),
-         sd_ack_o          => open,
-
-         sd_buff_addr_o    => open,
-         sd_buff_dout_o    => open,
-         sd_buff_din_i     => (others => (others => '0')),
-         sd_buff_wr_o      => open,
-
-         -- QNICE interface (MMIO, 4k-segmented)
-         -- qnice_addr is 28-bit because we have a 16-bit window selector and a 4k window: 65536*4096 = 268.435.456 = 2^28
-         qnice_addr_i      => qnice_dev_addr_i,
-         qnice_data_i      => qnice_dev_data_i,
-         qnice_data_o      => qnice_demo_vd_data_o,
-         qnice_ce_i        => qnice_demo_vd_ce,
-         qnice_we_i        => qnice_demo_vd_we
-      ); -- i_vdrives
+   
 
 end architecture synthesis;
 
