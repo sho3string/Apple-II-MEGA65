@@ -71,7 +71,7 @@ entity main is
       ioctl_addr              : std_logic_vector(24 downto 0);
       ioctl_data              : std_logic_vector(7 downto 0);
       
-      drive_led_o             : out std_logic
+      main_drive_led_o        : out std_logic
       
    );
 end entity main;
@@ -90,8 +90,6 @@ signal padded_l       : std_logic_vector(15 downto 0);
 signal padded_r       : std_logic_vector(15 downto 0);
 
 signal text_color     : std_logic := '0';
-signal video_toggle   : std_logic := '0';
-signal palette_toggle : std_logic := '0';
 
 signal tape_adc       : std_logic;
 signal tape_adc_act   : std_logic;
@@ -103,6 +101,13 @@ signal ram_we         : std_logic;
 signal ram_aux        : std_logic;
 
 signal ps2_key        : std_logic_vector(10 downto 0);
+signal decoded_key    : unsigned(7 downto 0);          -- From keyboard_adapter
+signal akd            : std_logic;                     -- Any key down signal
+signal open_apple     : std_logic;
+signal closed_apple   : std_logic;
+signal soft_reset     : std_logic := '0';
+signal video_toggle   : std_logic := '0';	  -- signal to control change of video modes
+signal palette_toggle : std_logic := '0';	  -- signal to control change of paleetes
 
 signal sd_buff_addr   : unsigned(8 downto 0);
 signal sd_buff_dout   : unsigned(7 downto 0);
@@ -158,7 +163,9 @@ signal UART_TXD            : std_logic;
 signal UART_DTR            : std_logic; 
 signal UART_DSR            : std_logic;
 
-signal RTC                 : std_logic_vector(64 downto 0); 
+signal RTC                 : std_logic_vector(64 downto 0);
+
+constant m65_capslock      : integer := 72;
 
 begin
    
@@ -204,7 +211,7 @@ begin
    port map (
    
         clk_14m         => clk_main_i,
-        clk_50m         => clk_video_i,
+        clk_50m         => clk_video_i, -- super serial ( 1.8432 MHz ). Use video clk 57.27272727272727 / 31 = 1.847
         cpu_wait        => cpu_wait_hdd,
         cpu_type        => '1', -- 65c02 - Apple IIe Enhanced
         reset_cold      => reset_hard_i,
@@ -223,7 +230,7 @@ begin
         text_color      => text_color,
         color_palette   => "00", -- Original NTSC
         palmode         => '0', -- Disabled
-        romswitch       => '0',
+        romswitch       => '1',
         audio_l         => audio_l,
         audio_r         => audio_r,
         tape_in         => tape_adc_act and tape_adc,
@@ -241,6 +248,7 @@ begin
 	    ioctl_wr        => ioctl_wr,
         
         ps2_key         => ps2_key,
+        mega65_caps     => not keyboard_n(m65_capslock),
         joy             => "000000", -- to do
         joy_an          => "0000000000000000", -- to do
         
@@ -263,7 +271,7 @@ begin
 	    DISK_READY      => DISK_READY,
 	    D1_ACTIVE       => D1_ACTIVE,
 	    D2_ACTIVE       => D2_ACTIVE,
-	    DISK_ACT        => drive_led_o,
+	    DISK_ACT        => main_drive_led_o,
         
         D1_WP           => '0', -- disk 1 motor on/off
 	    D2_WP           => '0', -- disk 2 motor om/off
@@ -295,10 +303,10 @@ begin
         clk         => clk_main_i,
         adc_bus     => adc_bus,
         dout        => tape_adc,
-        active      => tape_adc
+        active      => tape_adc_act
    );
    
-   
+   -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
    i_keyboard : entity work.keyboard
       port map (
          clk_main_i           => clk_main_i,
@@ -312,8 +320,27 @@ begin
          --    bit 0: Space
          --    bit 1: Return
          --    bit 2: Run/Stop
-         example_n_o          => keyboard_n
+         keyboard_n_o          => keyboard_n
       ); -- i_keyboard
-
+      
+     -- Instantiate the keyboard adapter
+    
+    i_keyboard_adapter : entity work.keyboard_adapter
+        port map (
+            keyboard_n         => keyboard_n,
+            kb_key_pressed_n   => kb_key_pressed_n_i,
+            CLK_14M            => clk_main_i,
+            reset              => reset_soft_i,
+            --reads              => '0',            -- Not used for now
+            --akd                => akd,
+            --K                  => decoded_key,
+            ps2_key            => ps2_key
+            --open_apple         => open_apple,
+            --closed_apple       => closed_apple,
+            --soft_reset         => soft_reset,
+            --video_toggle       => video_toggle,
+            --palette_toggle     => palette_toggle
+    );
+    
 end architecture synthesis;
 

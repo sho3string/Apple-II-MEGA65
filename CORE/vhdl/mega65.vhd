@@ -104,7 +104,7 @@ port (
    clk_i                   : in  std_logic;              -- 100 MHz clock
 
    -- Share clock and reset with the framework
-   main_clk_o              : out std_logic;              -- CORE's 54 MHz clock
+   main_clk_o              : out std_logic;              -- CORE's 57 MHz clock
    main_rst_o              : out std_logic;              -- CORE's reset, synchronized
 
    -- M2M's reset manager provides 2 signals:
@@ -444,7 +444,7 @@ begin
          ioctl_addr           => qnice_dn_addr,  
          ioctl_data           => qnice_dn_data,
          
-         drive_led_o          => main_drive_led_o
+         main_drive_led_o     => main_drive_led_o
       ); -- i_main
 
     /*       Res        Hz frequency  Vertical frequency   Pixel clock
@@ -582,8 +582,8 @@ begin
    -- a) In case that this is handled in main.vhd, you need to add the appropriate ports to i_main
    -- b) You might want to change the drive led's color (just like the C64 core does) as long as
    --    the cache is dirty (i.e. as long as the write process is not finished, yet)
-   main_drive_led_o     <= '0';
-   main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
+   --main_drive_led_o     <= '0';
+   --main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
 
    
 

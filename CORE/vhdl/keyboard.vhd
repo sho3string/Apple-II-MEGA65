@@ -16,6 +16,12 @@
 -- kb_key_num_i is running through the key numbers 0 to 79 with a frequency of 1 kHz, i.e. the whole
 -- keyboard is scanned 1000 times per second. kb_key_pressed_n_i is already debounced and signals
 -- low active, if a certain key is being pressed right now.
+--
+-- A Mega-65 keyboard has all characters on the keys that an Apple IIe, many keys are in the wrong place
+-- So we try to map all symbols on the keyboard to equivalent Apple IIe key presses.
+-- Some keys need to be shifted on the Mega-65 while being not shifted on the Apple such as '[' and ']'
+
+
 -- 
 -- MiSTer2MEGA65 done by sy2002 and MJoergen in 2022 and licensed under GPL v3
 ---------------------------------------------------------------------------------------------------------
@@ -31,10 +37,9 @@ entity keyboard is
       -- Interface to the MEGA65 keyboard
       key_num_i            : in integer range 0 to 79;   -- cycles through all MEGA65 keys
       key_pressed_n_i      : in std_logic;               -- low active: debounced feedback: is kb_key_num_i pressed right now?
-               
       -- @TODO: Create the kind of keyboard output that your core needs
       -- "example_n_o" is a low active register and used by the demo core
-      example_n_o          : out std_logic_vector(79 downto 0)
+      keyboard_n_o          : out std_logic_vector(79 downto 0)
    );
 end keyboard;
 
@@ -123,7 +128,7 @@ signal key_pressed_n : std_logic_vector(79 downto 0);
 
 begin
 
-   example_n_o <= key_pressed_n;
+   keyboard_n_o  <= key_pressed_n;
    
    keyboard_state : process(clk_main_i)
    begin
@@ -131,5 +136,6 @@ begin
          key_pressed_n(key_num_i) <= key_pressed_n_i;
       end if;
    end process;
+   
 
 end beh;
