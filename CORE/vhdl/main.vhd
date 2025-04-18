@@ -123,13 +123,10 @@ type sd_lba_array is array (0 to 2) of unsigned(31 downto 0);
 -- Signal declaration
 signal sd_lba : sd_lba_array;
 
-
--- Declare two memory blocks
-type ram_type is array (0 to 196607) of std_logic_vector(7 downto 0); -- 192KB
-type ram_type_aux is array (0 to 65535) of std_logic_vector(7 downto 0); -- 64KB
-signal ram0 : ram_type;
-signal ram1 : ram_type_aux;
-signal ram_dout_internal   : std_logic_vector(15 downto 0);
+-- Apple II ram/auxilliary ram. Aux ram is utilised for the 80 column mode
+type ram_type is array (natural range <>) of std_logic_vector(7 downto 0);
+signal ram0 : ram_type(0 to 196607);
+signal ram1 : ram_type(0 to 65535);
 
 signal adc_bus             : std_logic_vector(3 downto 0);
 
@@ -177,36 +174,40 @@ begin
    audio_right_o(15) <= not padded_r(15);
    audio_right_o(14 downto 0) <= signed(padded_l(14 downto 0));
    
-   process(clk_main_i) begin	
-	    --flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
+    process(clk_main_i) begin	
+        --flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
         if rising_edge(clk_main_i) then
            text_color <= '1'; --(~status[20] & ~status[19] & status[21]);
         end if;
-   end process; 
+    end process; 
    
-   process(clk_main_i)
+    -- RAM0 Process: Handles lower byte when ram_aux = '0'
+    i_ram0: process(clk_main_i)
     begin
         if rising_edge(clk_main_i) then
-            -- RAM0 (192KB) for lower byte when ram_aux = 0
             if ram_we = '1' and ram_aux = '0' then
                 ram0(to_integer(unsigned(ram_addr))) <= ram_din;
-                ram_dout_internal(7 downto 0) <= ram_din;
-            elsif ram_aux = '0' then
-                ram_dout_internal(7 downto 0) <= ram0(to_integer(unsigned(ram_addr)));
-            end if;
-
-            -- RAM1 (64KB) for upper byte when ram_aux = 1
-            if ram_we = '1' and ram_aux = '1' then
-                ram1(to_integer(unsigned(ram_addr(15 downto 0)))) <= ram_din;
-                ram_dout_internal(15 downto 8) <= ram_din;
-            elsif ram_aux = '1' then
-                ram_dout_internal(15 downto 8) <= ram1(to_integer(unsigned(ram_addr(15 downto 0))));
+                ram_dout(7 downto 0) <= ram_din;
+            else
+                ram_dout(7 downto 0) <= ram0(to_integer(unsigned(ram_addr)));
             end if;
         end if;
     end process;
-    -- Assign internal signal to the output
-    ram_dout <= ram_dout_internal;
-  
+
+    -- RAM1 Process: Handles upper byte when ram_aux = '1'
+    i_ram1: process(clk_main_i)
+    begin
+        if rising_edge(clk_main_i) then
+            if ram_we = '1' and ram_aux = '1' then
+                ram1(to_integer(unsigned(ram_addr(15 downto 0)))) <= ram_din;
+                ram_dout(15 downto 8) <= ram_din;
+            else
+                ram_dout(15 downto 8) <= ram1(to_integer(unsigned(ram_addr(15 downto 0))));
+            end if;
+        end if;
+    end process;
+
+ 
    i_apple2_top : entity work.apple2_top
    port map (
    
@@ -230,7 +231,7 @@ begin
         text_color      => text_color,
         color_palette   => "00", -- Original NTSC
         palmode         => '0', -- Disabled
-        romswitch       => '1',
+        romswitch       => '1', -- bottom toggle switch on apple ii US/UK keyboard
         audio_l         => audio_l,
         audio_r         => audio_r,
         tape_in         => tape_adc_act and tape_adc,
