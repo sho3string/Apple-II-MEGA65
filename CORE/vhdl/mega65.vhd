@@ -242,6 +242,18 @@ signal video_rst              : std_logic;
 ---------------------------------------------------------------------------------------------
 
 -- Democore menu items
+/*constant C_MENU_HDMI_16_9_50   : natural := 11;
+constant C_MENU_HDMI_16_9_60   : natural := 12;
+constant C_MENU_HDMI_4_3_50    : natural := 13;
+constant C_MENU_HDMI_5_4_50    : natural := 14;
+constant C_MENU_HDMI_640_60    : natural := 15;
+constant C_MENU_HDMI_720_5994  : natural := 16;
+constant C_MENU_SVGA_800_60    : natural := 17;
+constant C_MENU_CRT_EMULATION  : natural := 23;
+constant C_MENU_HDMI_ZOOM      : natural := 24;
+constant C_MENU_IMPROVE_AUDIO  : natural := 25;*/
+
+-- Democore menu items
 constant C_MENU_HDMI_16_9_50   : natural := 12;
 constant C_MENU_HDMI_16_9_60   : natural := 13;
 constant C_MENU_HDMI_4_3_50    : natural := 14;
@@ -249,14 +261,9 @@ constant C_MENU_HDMI_5_4_50    : natural := 15;
 constant C_MENU_HDMI_640_60    : natural := 16;
 constant C_MENU_HDMI_720_5994  : natural := 17;
 constant C_MENU_SVGA_800_60    : natural := 18;
-constant C_MENU_CRT_EMULATION  : natural := 30;
-constant C_MENU_HDMI_ZOOM      : natural := 31;
-constant C_MENU_IMPROVE_AUDIO  : natural := 32;
-
--- QNICE clock domain
-signal qnice_demo_vd_data_o   : std_logic_vector(15 downto 0);
-signal qnice_demo_vd_ce       : std_logic;
-signal qnice_demo_vd_we       : std_logic;
+constant C_MENU_CRT_EMULATION  : natural := 28;
+constant C_MENU_HDMI_ZOOM      : natural := 29;
+constant C_MENU_IMPROVE_AUDIO  : natural := 30;
 
 -- Video gen
 signal div                       : std_logic_vector(2 downto 0);
@@ -298,30 +305,89 @@ signal ar                  : std_logic_vector(1 downto 0);
 signal ARX                 : std_logic_vector(11 downto 0);
 signal ARY                 : std_logic_vector(11 downto 0);
 
-    
+signal ioctl_download      : std_logic := '0';
+
+-- QNICE clock domain
+signal qnice_apple_ce      : std_logic;
+signal qnice_apple_we      : std_logic;
+signal qnice_apple_data    : std_logic_vector(15 downto 0);
+
+signal qnice_apple_mount0_buf_ram_we   : std_logic;
+signal qnice_apple_mount0_buf_ram_data : std_logic_vector(7 downto 0);   
+
+signal qnice_apple_mount1_buf_ram_we   : std_logic;
+signal qnice_apple_mount1_buf_ram_data : std_logic_vector(7 downto 0);  
 
 begin
 
-    -- Configure the LEDs:
+   hr_core_write_o      <= '0';
+   hr_core_read_o       <= '0';
+   hr_core_address_o    <= (others => '0');
+   hr_core_writedata_o  <= (others => '0');
+   hr_core_byteenable_o <= (others => '0');
+   hr_core_burstcount_o <= (others => '0');
+   
+   -- Tristate all expansion port drivers that we can directly control
+   -- @TODO: As soon as we support modules that can act as busmaster, we need to become more flexible here
+   cart_ctrl_oe_o       <= '0';
+   cart_addr_oe_o       <= '0';
+   cart_data_oe_o       <= '0';
+
+   -- Due to a bug in the R5/R6 boards, the cartridge port needs to be enabled for joystick port 2 to work 
+   cart_en_o            <= '1';
+
+   cart_reset_oe_o      <= '0';
+   cart_game_oe_o       <= '0';
+   cart_exrom_oe_o      <= '0';
+   cart_nmi_oe_o        <= '0';
+   cart_irq_oe_o        <= '0';
+   cart_roml_oe_o       <= '0';
+   cart_romh_oe_o       <= '0';
+
+   -- Default values for all signals
+   cart_phi2_o          <= '0';
+   cart_reset_o         <= '1';
+   cart_dotclock_o      <= '0';
+   cart_game_o          <= '1';
+   cart_exrom_o         <= '1';
+   cart_nmi_o           <= '1';
+   cart_irq_o           <= '1';
+   cart_roml_o          <= '0';
+   cart_romh_o          <= '0';
+   cart_ba_o            <= '0';
+   cart_rw_o            <= '0';
+   cart_io1_o           <= '0';
+   cart_io2_o           <= '0';
+   cart_a_o             <= (others => '0');
+   cart_d_o             <= (others => '0');
+
+   main_joy_1_up_n_o    <= '1';
+   main_joy_1_down_n_o  <= '1';
+   main_joy_1_left_n_o  <= '1';
+   main_joy_1_right_n_o <= '1';
+   main_joy_1_fire_n_o  <= '1';
+   main_joy_2_up_n_o    <= '1';
+   main_joy_2_down_n_o  <= '1';
+   main_joy_2_left_n_o  <= '1';
+   main_joy_2_right_n_o <= '1';
+   main_joy_2_fire_n_o  <= '1';
+
+   -- Configure the LEDs:
    -- Power led on and green, drive led always off
    main_power_led_o       <= '1';
    main_power_led_col_o   <= x"00FF00";
    --main_drive_led_o       <= '0';
    main_drive_led_col_o   <= x"FF0000"; 
    
-   --ar <= "00";
-   --ARX <= "000000000100" when ar = "00" else std_logic_vector(unsigned(ar) - 1);
-   --ARY <= "000000000011" when ar = "00" else "000000000000";
-   
-   clk_gen : entity work.clk
-      port map (
+    clk_gen : entity work.clk
+    port map (
          sys_clk_i         => clk_i,           -- expects 100 MHz
          main_clk_o        => main_clk,        -- CORE's 14.318181 MHz clock
          main_rst_o        => main_rst,        -- CORE's reset, synchronized
          video_clk_o       => video_clk,       -- CORE's video clock
          video_rst_o       => video_rst
-         
-      ); -- clk_gen
+     
+    ); -- clk_gen
 
    main_clk_o  <= main_clk;
    main_rst_o  <= main_rst;
@@ -340,51 +406,6 @@ begin
    ---------------------------------------------------------------------------------------------
    -- main_clk (MiSTer core's clock)
    ---------------------------------------------------------------------------------------------
-   
-   /*i_video_freak : entity work.video_freak
-   port map (
-   
-        CLK_VIDEO      => video_clk,
-        CE_PIXEL       => video_ce_o,
-        VGA_VS         => video_vblank_o,
-        HDMI_WIDTH     => hdmi_width,
-        HDMI_HEIGHT    => hdmi_height,
-        VGA_DE_IN      => video_de,
-        VGA_DE         => open,
-        ARX            => ARX,
-        ARY            => ARY,
-        CROP_SIZE      => "0",
-        CROP_OFF       => "0",
-        SCALE          => "00"
-    );
-
-   i_video_mixer : entity work.video_mixer
-   generic map (
-         LINE_LENGTH    => 580,
-         GAMMA          => 1
-      )
-   port map (
-         CLK_VIDEO      => video_clk,
-         CE_PIXEL       => video_ce_o,
-         ce_pix         => ce_pix,
-         scandoubler    => qnice_scandoubler_o,
-         hq2x           => '0',
-         gamma_bus      => gamma_bus,
-         R              => video_red,
-         G              => video_green,
-         B              => video_blue,
-         HSync          => video_hs,
-	     VSync          => video_vs,
-	     HBlank         => video_hblank,
-	     VBlank         => video_vblank,
-	     HDMI_FREEZE    => '0',
-	     VGA_R          => video_red_o,
-	     VGA_G          => video_green_o,
-         VGA_B          => video_blue_o,
-         VGA_VS         => video_vblank_o,
-         VGA_HS         => video_hblank_o,
-         VGA_DE         => video_de
-   );*/
 
    -- main.vhd contains the actual MiSTer core
    i_main : entity work.main
@@ -392,6 +413,13 @@ begin
          G_VDNUM              => C_VDNUM
       )
       port map (
+         apple_qnice_clk_i    => qnice_clk_i,
+         apple_qnice_addr_i   => qnice_dev_addr_i,
+         apple_qnice_data_i   => qnice_dev_data_i,
+         apple_qnice_data_o   => qnice_apple_data,
+         apple_qnice_ce_i     => qnice_dev_ce_i,
+         apple_qnice_we_i     => qnice_dev_we_i,
+         
          clk_main_i           => main_clk,
          clk_video_i          => video_clk,
          reset_soft_i         => main_reset_core_i,
@@ -437,7 +465,7 @@ begin
          pot2_x_i             => main_pot2_x_i,
          pot2_y_i             => main_pot2_y_i,
          
-         ioctl_download       => '1',
+         ioctl_download       => ioctl_download,
          
          ioctl_index          => ioctl_index,
          ioctl_wr             => qnice_dn_wr,
@@ -458,19 +486,12 @@ begin
             video_ce_ovl_o <= '0';
 
             div <= std_logic_vector(unsigned(div) + 1);
-            --if <check menu item > then [ to do ]
-            --ce_pix <= div(2) and div(1) and div(0); -- PAL  - 7.15875 Mhz ( 57.27 / 8 )
-            --else
-            --ce_pix <= div(1) and div(0);                  -- NTSC - 14.3175 Mhz ( 57.27 / 4 )
-            -- end if;
             ce_pix <= '1' when div(1 downto 0) = "11" else '0'; -- AND lower 2 bits
-            
             
             if div(0) = '1' then
                 video_ce_ovl_o <= '1'; -- 28 MHz
             end if;
             
-      
             video_red   <= main_video_red;
             video_green <= main_video_green;
             video_blue  <= main_video_blue ;
@@ -549,14 +570,74 @@ begin
       -- make sure that this is x"EEEE" by default and avoid a register here by having this default value
       qnice_dev_data_o     <= x"EEEE";
       qnice_dev_wait_o     <= '0';
-
+      qnice_apple_ce       <= '0';
+      qnice_apple_we       <= '0';
+      qnice_apple_mount0_buf_ram_we <= '0';
+      qnice_apple_mount1_buf_ram_we <= '0';
+      
+      
+      if main_rst then
+        ioctl_download <= '1';
+      else
+        ioctl_download <= '0';
+      end if;
    
       case qnice_dev_id_i is
-
-
+         when C_DEV_APPLE_VD =>
+            qnice_apple_ce       <= qnice_dev_ce_i;
+            qnice_apple_we       <= qnice_dev_we_i;
+            qnice_dev_data_o     <= qnice_apple_data;   
+         
+          -- Disk mount buffer drive 0:)
+         when C_DEV_APPLE_MOUNT0 =>
+            qnice_apple_mount0_buf_ram_we <= qnice_dev_we_i;
+            qnice_dev_data_o              <= x"00" & qnice_apple_mount0_buf_ram_data;
+         when C_DEV_APPLE_MOUNT1 =>
+            qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
+            qnice_dev_data_o              <= x"00" & qnice_apple_mount1_buf_ram_data;
          when others => null;
       end case;
+      
+      if qnice_rst_i = '1' then
+        qnice_dn_wr <= '0';
+      end if;
+      
    end process core_specific_devices;
+   
+   -- For now: Let's use a simple BRAM (using only 1 port will make a BRAM) for buffering
+   -- the disks that we are mounting.
+   -- @TODO: Switch to HyperRAM at a later stage
+   mount0_buf_ram : entity work.dualport_2clk_ram
+      generic map (
+         ADDR_WIDTH        => 18,
+         DATA_WIDTH        => 8,
+         MAXIMUM_SIZE      => 143360,        -- maximum size of any dsk image for Apple IIe
+         FALLING_A         => true
+      )
+      port map (
+         -- QNICE only
+         clock_a           => qnice_clk_i,
+         address_a         => qnice_dev_addr_i(17 downto 0),
+         data_a            => qnice_dev_data_i(7 downto 0),
+         wren_a            => qnice_apple_mount0_buf_ram_we,
+         q_a               => qnice_apple_mount0_buf_ram_data
+      ); -- mount_buf_ram
+      
+    mount1_buf_ram : entity work.dualport_2clk_ram
+      generic map (
+         ADDR_WIDTH        => 18,
+         DATA_WIDTH        => 8,
+         MAXIMUM_SIZE      => 143360,        -- maximum size of any dsk image for Apple IIe
+         FALLING_A         => true
+      )
+      port map (
+         -- QNICE only
+         clock_a           => qnice_clk_i,
+         address_a         => qnice_dev_addr_i(17 downto 0),
+         data_a            => qnice_dev_data_i(7 downto 0),
+         wren_a            => qnice_apple_mount1_buf_ram_we,
+         q_a               => qnice_apple_mount1_buf_ram_data
+      ); -- mount_buf_ram
 
    ---------------------------------------------------------------------------------------------
    -- Dual Clocks

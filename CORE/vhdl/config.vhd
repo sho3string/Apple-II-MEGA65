@@ -188,8 +188,8 @@ constant SEL_CFG_FILE      : std_logic_vector(15 downto 0) := x"0101";
 
 -- START YOUR CONFIGURATION BELOW THIS LINE
 
-constant DIR_START         : string := "/m2m";
-constant CFG_FILE          : string := "/m2m/m2mcfg";
+constant DIR_START         : string := "/appl2e";
+constant CFG_FILE          : string := "/apple2e/a2ecfg";
 
 --------------------------------------------------------------------------------------------------------------------
 -- General configuration settings: Reset, Pause, OSD behavior, Ascal, etc. (Selector 0x0110)
@@ -268,7 +268,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "Apple II Core V1.0";
+constant CORENAME          : string := "M2M DEMO CORE V1.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -329,7 +329,7 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 35;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 33;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
@@ -337,7 +337,7 @@ constant OPTM_SIZE         : natural := 35;  -- amount of items including empty 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 23;
-constant OPTM_DY           : natural := 24;
+constant OPTM_DY           : natural := 26;
 
 constant OPTM_ITEMS        : string :=
 
@@ -350,7 +350,6 @@ constant OPTM_ITEMS        : string :=
    "\n"                     &
    " Demo Headline B\n"     &
    "\n"                     &
-
    " HDMI: %s\n"            &    -- HDMI submenu
    " HDMI Settings\n"       &
    "\n"                     &
@@ -363,13 +362,12 @@ constant OPTM_ITEMS        : string :=
    " 800x600 60 Hz\n"       &
    "\n"                     &
    " Back to main menu\n"   &
-
    "\n"                     &
    " Drives\n"              &
    "\n"                     &
-   " Drive X:%s\n"          &
-   " Drive Y:%s\n"          &
-   " Drive Z:%s\n"          &
+   " Drive 1:%s\n"          &
+   --" Drive Y:%s\n"          &
+   --" Drive Z:%s\n"          &
    "\n"                     &
    " Another Headline\n"    &
    "\n"                     &
@@ -387,11 +385,11 @@ constant OPTM_ITEMS        : string :=
 constant OPTM_G_Demo_A     : integer := 1;
 constant OPTM_G_HDMI       : integer := 2;
 constant OPTM_G_Drive_X    : integer := 3;
-constant OPTM_G_Drive_Y    : integer := 4;
-constant OPTM_G_Drive_Z    : integer := 5;
-constant OPTM_G_CRT        : integer := 6;
-constant OPTM_G_Zoom       : integer := 7;
-constant OPTM_G_Audio      : integer := 8;
+--constant OPTM_G_Drive_Y    : integer := 4;
+--constant OPTM_G_Drive_Z    : integer := 5;
+constant OPTM_G_CRT        : integer := 4;
+constant OPTM_G_Zoom       : integer := 5;
+constant OPTM_G_Audio      : integer := 6;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -408,7 +406,6 @@ constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,     
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Demo Headline B"
                                              OPTM_G_LINE,                              -- Line
-
                                              OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
                                              OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "HDMI Settings"
                                              OPTM_G_LINE,                              -- Line
@@ -421,14 +418,12 @@ constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,     
                                              OPTM_G_HDMI,                              -- 600p 60 Hz
                                              OPTM_G_LINE,                              -- open
                                              OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- Close submenu / back to main menu
-                                                                                       -- HDMI submenu block: END
-
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Drives"
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_Drive_X + OPTM_G_MOUNT_DRV,        -- Drive X
-                                             OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,        -- Drive Y
-                                             OPTM_G_Drive_Z + OPTM_G_MOUNT_DRV,        -- Drive Z
+                                             --OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,        -- Drive Y
+                                             --OPTM_G_Drive_Z + OPTM_G_MOUNT_DRV,        -- Drive Z
                                              OPTM_G_LINE,                              -- Line
                                              OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Another Headline"
                                              OPTM_G_LINE,                              -- Line
@@ -573,4 +568,3 @@ begin
 end process;
 
 end architecture beh;
-

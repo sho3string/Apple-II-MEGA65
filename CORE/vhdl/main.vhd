@@ -12,6 +12,7 @@ use ieee.numeric_std.all;
 
 library work;
 use work.video_modes_pkg.all;
+use work.vdrives_pkg.all;
 
 entity main is
    generic (
@@ -65,11 +66,18 @@ entity main is
       pot2_x_i                : in  std_logic_vector(7 downto 0);
       pot2_y_i                : in  std_logic_vector(7 downto 0);
       
-      ioctl_download          : std_logic;
-      ioctl_index             : std_logic_vector(7 downto 0);
-      ioctl_wr                : std_logic;
-      ioctl_addr              : std_logic_vector(24 downto 0);
-      ioctl_data              : std_logic_vector(7 downto 0);
+      ioctl_download          : in std_logic;
+      ioctl_index             : in std_logic_vector(7 downto 0);
+      ioctl_wr                : in std_logic;
+      ioctl_addr              : in std_logic_vector(24 downto 0);
+      ioctl_data              : in std_logic_vector(7 downto 0);
+      
+      apple_qnice_clk_i       : in  std_logic;
+      apple_qnice_addr_i      : in  std_logic_vector(27 downto 0);
+      apple_qnice_data_i      : in  std_logic_vector(15 downto 0);
+      apple_qnice_data_o      : out std_logic_vector(15 downto 0);
+      apple_qnice_ce_i        : in  std_logic;
+      apple_qnice_we_i        : in  std_logic;
       
       main_drive_led_o        : out std_logic
       
@@ -109,19 +117,24 @@ signal soft_reset     : std_logic := '0';
 signal video_toggle   : std_logic := '0';	  -- signal to control change of video modes
 signal palette_toggle : std_logic := '0';	  -- signal to control change of paleetes
 
-signal sd_buff_addr   : unsigned(8 downto 0);
-signal sd_buff_dout   : unsigned(7 downto 0);
--- Declare an array type for 8-bit wide elements
-type sd_buff_array is array (0 to 2) of unsigned(7 downto 0);
--- Signal declaration
-signal sd_buff_din    : sd_buff_array;
-signal sd_buff_wr     : std_logic;
-signal sd_ack         : std_logic_vector(2 downto 0);
+signal sd_buff_addr   : std_logic_vector(8 downto 0);
+signal sd_buff_dout   : std_logic_vector(7 downto 0);
+signal img_mounted    : std_logic_vector(G_VDNUM - 1 downto 0);
+signal img_readonly   : std_logic;
+signal img_size       : std_logic_vector(31 downto 0);
+signal img_type       : std_logic_vector( 1 downto 0);
 
--- Declare the array type for 32-bit wide elements
-type sd_lba_array is array (0 to 2) of unsigned(31 downto 0);
--- Signal declaration
-signal sd_lba : sd_lba_array;
+signal sd_buff_din    : vd_vec_array(G_VDNUM - 1 downto 0)(7 downto 0);
+signal sd_buff_wr     : std_logic;
+
+signal sd_lba         : vd_vec_array(G_VDNUM - 1 downto 0)(31 downto 0);
+signal sd_ack         : vd_std_array(G_VDNUM - 1 downto 0);
+signal sd_rd          : vd_std_array(G_VDNUM - 1 downto 0);
+signal sd_wr          : vd_std_array(G_VDNUM - 1 downto 0);
+signal sd_blk_cnt     : vd_vec_array(G_VDNUM - 1 downto 0)(5 downto 0);
+signal vdrives_mounted: std_logic_vector(G_VDNUM - 1 downto 0);
+signal cache_dirty    : std_logic_vector(G_VDNUM - 1 downto 0);
+
 
 -- Apple II ram/auxilliary ram. Aux ram is utilised for the 80 column mode
 type ram_type is array (natural range <>) of std_logic_vector(7 downto 0);
@@ -146,12 +159,19 @@ signal TRACK2_RAM_WE       : std_logic;
 signal TRACK2              : unsigned(5 downto 0);
 
 signal DISK_READY          : std_logic_vector(1 downto 0);
+signal DISK_CHANGE         : std_logic_vector(1 downto 0);
+signal disk_mount          : std_logic_vector(1 downto 0);
+
+signal dd_reset            : std_logic := reset_soft_i or reset_hard_i;
 
 signal hdd_mounted         : std_logic := '0';
 signal hdd_read            : std_logic;
 signal hdd_write           : std_logic;
 signal hdd_protect         : std_logic;
 signal cpu_wait_hdd        : std_logic := '0';
+
+signal hdd_ram_do_internal : unsigned(7 downto 0);
+signal sd_lba_internal     : unsigned(31 downto 0);
 
 signal UART_CTS            : std_logic; 
 signal UART_RTS            : std_logic; 
@@ -174,12 +194,15 @@ begin
    audio_right_o(15) <= not padded_r(15);
    audio_right_o(14 downto 0) <= signed(padded_l(14 downto 0));
    
-    process(clk_main_i) begin	
+   hdd_ram_do_internal <= unsigned(sd_buff_din(1));
+   sd_lba_internal     <= unsigned(sd_lba(1));
+   
+   process(clk_main_i) begin	
         --flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
         if rising_edge(clk_main_i) then
            text_color <= '1'; --(~status[20] & ~status[19] & status[21]);
         end if;
-    end process; 
+   end process; 
    
     -- RAM0 Process: Handles lower byte when ram_aux = '0'
     i_ram0: process(clk_main_i)
@@ -207,7 +230,75 @@ begin
         end if;
     end process;
 
- 
+    
+    hdd : process(clk_main_i)
+        variable state : std_logic := '0';
+        variable old_ack : std_logic := '0';
+        variable hdd_read_pending : std_logic := '0';
+        variable hdd_write_pending : std_logic := '0';
+    begin 
+        if rising_edge(clk_main_i) then            
+            old_ack := sd_ack(1);
+            hdd_read_pending := hdd_read_pending or hdd_read;
+            hdd_write_pending := hdd_write_pending or hdd_write;
+            
+            if img_mounted(1) = '1' then
+                hdd_mounted <= '1' when to_integer(unsigned(img_size)) /= 0 else '0';
+                hdd_protect <= img_readonly;
+            end if;
+	        
+	        if dd_reset = '1' then
+                state := '0';
+                cpu_wait_hdd <= '0';
+                hdd_read_pending := '0';
+                hdd_write_pending := '0';
+                sd_rd(1) <= '0';
+                sd_wr(1) <= '0';
+            elsif state = '0' then
+                if hdd_read_pending = '1' or hdd_write_pending = '1' then
+                    state := '1';
+                    sd_rd(1) <= hdd_read_pending;
+                    sd_wr(1) <= hdd_write_pending;
+                    cpu_wait_hdd <= '1';
+                end if;
+            else
+                 if old_ack = '0' and sd_ack(1) = '1' then
+                    hdd_read_pending := '0';
+                    hdd_write_pending := '0';
+                    sd_rd(1) <= '0';
+                    sd_wr(1) <= '0';
+                 elsif old_ack = '1' and sd_ack(1) = '0' then
+                    state := '0';
+                    cpu_wait_hdd <= '0';
+                 end if;
+	        end if;
+        end if;
+    end process;
+    
+    
+    drive1 : process(clk_main_i)
+    begin
+        if rising_edge(clk_main_i) then
+            if img_mounted(0) = '1' then
+                disk_mount(0) <= '1' when to_integer(unsigned(img_size)) /= 0 else '0';
+                DISK_CHANGE(0) <= not DISK_CHANGE(0);
+                -- disk_protect <= img_readonly;  -- Uncomment if needed
+            end if;
+        end if;
+    end process;
+    
+    
+    drive2 : process(clk_main_i)
+    begin
+        if rising_edge(clk_main_i) then
+            if img_mounted(2) = '1' then
+                disk_mount(1) <= '1' when to_integer(unsigned(img_size)) /= 0 else '0';
+                DISK_CHANGE(1) <= not DISK_CHANGE(1);
+            end if;
+        end if;
+    end process;
+    
+   
    i_apple2_top : entity work.apple2_top
    port map (
    
@@ -261,7 +352,7 @@ begin
 	    TRACK1_DO       => TRACK1_RAM_DO,
 	    TRACK1_WE       => TRACK1_RAM_WE,
 	    TRACK1_BUSY     => TRACK1_RAM_BUSY,
-	    
+	    -- Track buffer interface disk 2
 	    TRACK2          => TRACK2,
 	    TRACK2_ADDR     => TRACK2_RAM_ADDR,
 	    TRACK2_DI       => TRACK2_RAM_DI,
@@ -274,17 +365,17 @@ begin
 	    D2_ACTIVE       => D2_ACTIVE,
 	    DISK_ACT        => main_drive_led_o,
         
-        D1_WP           => '0', -- disk 1 motor on/off
-	    D2_WP           => '0', -- disk 2 motor om/off
+        D1_WP           => '0', -- disk 1 write protect
+	    D2_WP           => '0', -- disk 2 write protect
 	    
-	    HDD_SECTOR      => sd_lba(1)(15 downto 0),
+	    HDD_SECTOR      => sd_lba_internal(15 downto 0), 
 	    HDD_READ        => hdd_read,
 	    HDD_WRITE       => hdd_write,
 	    HDD_MOUNTED     => hdd_mounted,
 	    HDD_PROTECT     => hdd_protect,
-	    HDD_RAM_ADDR    => sd_buff_addr,
-	    HDD_RAM_DI      => sd_buff_dout,
-	    HDD_RAM_DO      => sd_buff_din(1),
+	    HDD_RAM_ADDR    => unsigned(sd_buff_addr),
+	    HDD_RAM_DI      => unsigned(sd_buff_dout),
+	    HDD_RAM_DO      => hdd_ram_do_internal,
 	    HDD_RAM_WE      => sd_buff_wr and sd_ack(1),
 	    
 	    UART_TXD        => UART_TXD,
@@ -296,7 +387,113 @@ begin
 	    RTC             => RTC
         
    );
-  
+   
+   -- to do
+   i_floppy_track_1 : entity work.floppy_track
+    port map (
+        
+        clk          => clk_main_i,
+        reset        => dd_reset,
+        ram_addr     => TRACK1_RAM_ADDR,
+        ram_di       => TRACK1_RAM_DI,
+        ram_do       => TRACK1_RAM_DO,
+        ram_we       => TRACK1_RAM_WE,
+        
+        track        => TRACK1,
+        busy         => TRACK1_RAM_BUSY,
+        change       => DISK_CHANGE(0),
+        mount        => disk_mount(0),
+        ready        => DISK_READY(0),
+        active       => D1_ACTIVE,
+
+        sd_buff_addr => sd_buff_addr,
+        sd_buff_dout => sd_buff_dout,
+        sd_buff_din  => sd_buff_din(0),
+        sd_buff_wr   => sd_buff_wr,
+
+        sd_lba       => sd_lba(0),
+        sd_rd        => sd_rd(0),
+        sd_wr        => sd_wr(0),
+        sd_ack       => sd_ack(0)	
+   );
+   
+   
+   i_floppy_track_2 : entity work.floppy_track
+    port map (
+        
+        clk          => clk_main_i,
+        reset        => dd_reset,
+        ram_addr     => TRACK2_RAM_ADDR,
+        ram_di       => TRACK2_RAM_DI,
+        ram_do       => TRACK2_RAM_DO,
+        ram_we       => TRACK2_RAM_WE,
+        
+        track        => TRACK2,
+        busy         => TRACK2_RAM_BUSY,
+        change       => DISK_CHANGE(1),
+        mount        => disk_mount(1),
+        ready        => DISK_READY(1),
+        active       => D2_ACTIVE,
+
+        sd_buff_addr => sd_buff_addr,
+        sd_buff_dout => sd_buff_dout,
+        sd_buff_din  => sd_buff_din(2),
+        sd_buff_wr   => sd_buff_wr,
+
+        sd_lba       => sd_lba(2),
+        sd_rd        => sd_rd(2),
+        sd_wr        => sd_wr(2),
+        sd_ack       => sd_ack(2)	
+   );
+   
+   i_vdrives : entity work.vdrives
+      generic map (
+         VDNUM       => G_VDNUM,     -- number of virtual disk drives
+         BLKSZ       => 2            -- 2 = 512 bytes block size
+      )
+      port map
+      (
+         clk_qnice_i       => apple_qnice_clk_i,
+         clk_core_i        => clk_main_i,
+         reset_core_i      => reset_soft_i,
+
+         -- Core clock domain
+         img_mounted_o     => img_mounted,
+         img_readonly_o    => img_readonly,
+         img_size_o        => img_size,
+         img_type_o        => img_type,
+         drive_mounted_o   => vdrives_mounted,
+
+         -- Cache output signals: The dirty flags can be used to enforce data consistency
+         -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
+         -- The flushing flags can be used to signal the fact that the caches are currently
+         -- flushing to the user, for example using a special color/signal for example
+         -- at the drive led
+         cache_dirty_o     => cache_dirty,
+         cache_flushing_o  => open,
+
+         -- QNICE clock domain
+         sd_lba_i          => sd_lba,
+         sd_blk_cnt_i      => sd_blk_cnt,
+         sd_rd_i           => sd_rd,
+         sd_wr_i           => sd_wr,
+         sd_ack_o          => sd_ack,
+
+         sd_buff_addr_o    => sd_buff_addr,
+         sd_buff_dout_o    => sd_buff_dout,
+         sd_buff_din_i     => sd_buff_din,
+         sd_buff_wr_o      => sd_buff_wr,
+
+         -- QNICE interface (MMIO, 4k-segmented)
+         -- qnice_addr is 28-bit because we have a 16-bit window selector and a 4k window: 65536*4096 = 268.435.456 = 2^28
+         qnice_addr_i      => apple_qnice_addr_i,
+         qnice_data_i      => apple_qnice_data_i,
+         qnice_data_o      => apple_qnice_data_o,
+         qnice_ce_i        => apple_qnice_ce_i,
+         qnice_we_i        => apple_qnice_we_i
+      ); -- i_vdrives
+       
+ 
    -- to do
    i_ltc2308_tape : entity work.ltc2308_tape
     port map (
@@ -332,15 +529,7 @@ begin
             kb_key_pressed_n   => kb_key_pressed_n_i,
             CLK_14M            => clk_main_i,
             reset              => reset_soft_i,
-            --reads              => '0',            -- Not used for now
-            --akd                => akd,
-            --K                  => decoded_key,
             ps2_key            => ps2_key
-            --open_apple         => open_apple,
-            --closed_apple       => closed_apple,
-            --soft_reset         => soft_reset,
-            --video_toggle       => video_toggle,
-            --palette_toggle     => palette_toggle
     );
     
 end architecture synthesis;

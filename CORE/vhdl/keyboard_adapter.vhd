@@ -125,17 +125,15 @@ constant m65_left_crsr     : integer := 74;  -- cursor left
 constant m65_restore       : integer := 75;
 
 -- Temporary signals for mapping
---signal any_key_down    : std_logic := '0';
---signal ext_bit         : std_logic := '0';
-signal toggle_bit      : std_logic := '0';
---signal pressed         : std_logic := '0';
-signal key_index       : integer range 0 to 79 := 0;
---signal key_mapped      : unsigned(7 downto 0) := (others => '0');
-signal prev_keyboard_n : std_logic_vector(79 downto 0) := (others => '1');
---signal current_active_key: integer range 0 to 79 := 0;
---signal current_key_valid : std_logic := '0';
-signal prev_keys : std_logic_vector(43 downto 0) := (others => '1');
-type slv8_array is array (0 to 43) of std_logic_vector(7 downto 0);
+
+signal toggle_bit           : std_logic := '0';
+
+signal key_index            : integer range 0 to 79 := 0;
+signal prev_keyboard_n      : std_logic_vector(79 downto 0) := (others => '1');
+signal prev_keys            : std_logic_vector(50 downto 0) := (others => '1');
+signal shift_pressed        : std_logic := '0';
+
+type slv8_array is array (0 to 60) of std_logic_vector(7 downto 0);
 
 -- Example key mappings for Apple IIe keys
 constant apple_keycode_esc         : std_logic_vector(7 downto 0) := x"76"; -- Escape ("esc" key)
@@ -179,7 +177,7 @@ constant apple_keycode_comma       : std_logic_vector(7 downto 0) := x"41"; -- ,
 constant apple_keycode_period      : std_logic_vector(7 downto 0) := x"49"; -- .
 constant apple_keycode_slash       : std_logic_vector(7 downto 0) := x"4a"; -- /
 constant apple_keycode_0           : std_logic_vector(7 downto 0) := x"45"; -- 0 , to do
-constant apple_keycode_P           : std_logic_vector(7 downto 0) := x"4d"; -- P , to do
+constant apple_keycode_p           : std_logic_vector(7 downto 0) := x"4d"; -- P , to do
 constant apple_keycode_space       : std_logic_vector(7 downto 0) := x"29"; -- Space
 constant apple_keycode_return      : std_logic_vector(7 downto 0) := x"5a"; -- Return
 constant apple_keycode_delete      : std_logic_vector(7 downto 0) := x"71"; -- Delete
@@ -187,7 +185,19 @@ constant apple_keycode_lshift      : std_logic_vector(7 downto 0) := x"12";
 constant apple_keycode_rshift      : std_logic_vector(7 downto 0) := x"59";
 constant apple_keycode_capslock    : std_logic_vector(7 downto 0) := x"58";
 constant apple_keycode_ctrl        : std_logic_vector(7 downto 0) := x"14";
-
+constant apple_keycode_openapple   : std_logic_vector(7 downto 0) := x"1f"; -- open apple
+constant apple_keycode_up          : std_logic_vector(7 downto 0) := x"75";
+constant apple_keycode_down        : std_logic_vector(7 downto 0) := x"72";
+constant apple_keycode_left        : std_logic_vector(7 downto 0) := x"6b";
+constant apple_keycode_right       : std_logic_vector(7 downto 0) := x"74";
+constant apple_keycode_quote       : std_logic_vector(7 downto 0) := x"52"; -- '
+constant apple_keycode_backtick    : std_logic_vector(7 downto 0) := x"5d"; -- `
+constant apple_keycode_sqbrack_l   : std_logic_vector(7 downto 0) := x"54"; -- [
+constant apple_keycode_sqbrack_r   : std_logic_vector(7 downto 0) := x"5b"; -- ]
+constant apple_keycode_minus       : std_logic_vector(7 downto 0) := x"4e"; -- -
+constant apple_keycode_equal       : std_logic_vector(7 downto 0) := x"55"; -- =
+constant apple_keycode_closedapple : std_logic_vector(7 downto 0) := x"11"; -- closed apple
+constant apple_keycode_backslash   : std_logic_vector(7 downto 0) := x"0e"; -- \
 /*
 type keymap_array is array(0 to 79) of unsigned(7 downto 0);
 
@@ -196,7 +206,7 @@ type keymap_array is array(0 to 79) of unsigned(7 downto 0);
     );
 */
 
--- Indexed from m65_0 through m65_9
+
 constant m65_keys : integer_vector := (
     m65_ins_del,
     m65_return,
@@ -241,9 +251,24 @@ constant m65_keys : integer_vector := (
     m65_capslock,
     m65_esc,
     m65_ctrl,
-    m65_tab
-    --m65_plus,   -- '+' unshifted key on the mega65
-    --m65_equal   -- '=' unshifted key on the mega65
+    m65_tab,
+    m65_comma,
+    m65_dot,
+    m65_mega,
+    m65_up_crsr,
+    m65_vert_crsr,
+    m65_left_crsr,
+    m65_horz_crsr,
+    m65_slash,
+    m65_colon,
+    m65_semicolon,
+    m65_equal,
+    m65_at,
+    m65_asterisk,
+    m65_plus,
+    m65_minus,
+    m65_restore,
+    m65_arrow_up
 );
 
 constant ps2_codes : slv8_array := (
@@ -290,9 +315,24 @@ constant ps2_codes : slv8_array := (
    40 => apple_keycode_capslock,
    41 => apple_keycode_esc,
    42 => apple_keycode_ctrl,
-   43 => apple_keycode_tab
-   --10 => x"55", -- + is shifted key on the apple iie, otherwise =
-   --11 => x"55"  -- = is unshifted on the apple iie
+   43 => apple_keycode_tab,
+   44 => apple_keycode_comma,
+   45 => apple_keycode_period,
+   46 => apple_keycode_openapple,
+   47 => apple_keycode_up,
+   48 => apple_keycode_down,
+   49 => apple_keycode_left,
+   50 => apple_keycode_right,
+   51 => apple_keycode_slash,
+   52 => apple_keycode_semicolon,
+   53 => apple_keycode_quote,
+   54 => apple_keycode_backtick,
+   55 => apple_keycode_sqbrack_l,
+   56 => apple_keycode_sqbrack_r,
+   57 => apple_keycode_minus,
+   58 => apple_keycode_equal,
+   59 => apple_keycode_closedapple,
+   60 => apple_keycode_backslash
 );
 
 begin
@@ -300,7 +340,9 @@ begin
     -- Initialize partial key map (expand as needed)
     
     process(CLK_14M)
-        variable toggled : std_logic;
+        variable toggled        : std_logic;
+        variable last_key_index : integer := -1; -- set to something outside the array defined in ps2_codes
+        variable shift_pressed  : boolean :=  false;
     begin
         if rising_edge(CLK_14M) then
             if reset = '1' then
@@ -308,211 +350,38 @@ begin
                 ps2_key <= (others => '0');
                 prev_keyboard_n <= (others => '1');
             else
-                for i in 0 to 43 loop
-                    if keyboard_n(m65_keys(i)) /= prev_keyboard_n(m65_keys(i)) then
-                        prev_keyboard_n(m65_keys(i)) <= keyboard_n(m65_keys(i));
-                
-                        -- Compute toggle up front and use it consistently
+
+                for current_key_index in 0 to 60 loop
+                    if keyboard_n(m65_keys(current_key_index)) /= prev_keyboard_n(m65_keys(current_key_index)) then
+                        prev_keyboard_n(m65_keys(current_key_index)) <= keyboard_n(m65_keys(current_key_index));
                         toggled := not toggle_bit;
                         toggle_bit <= toggled;
-                        
                         ps2_key(10) <= toggled;
-                        ps2_key(9)  <= not keyboard_n(m65_keys(i));  -- 0 = press, 1 = release
+                        ps2_key(9) <= not keyboard_n(m65_keys(current_key_index));  -- 0 = press, 1 = release 
+                        ps2_key(8) <= '1' when -- force extended bit
+                        not keyboard_n(m65_ins_del) or
+                        not keyboard_n(m65_up_crsr) or
+                        not keyboard_n(m65_vert_crsr) or
+                        not keyboard_n(m65_left_crsr) or
+                        not keyboard_n(m65_horz_crsr) 
+                        else '0';  -- Set to '0' if none are pressed
+                        ps2_key(7 downto 0) <= ps2_codes(current_key_index);
+                        /*
+                        shift_pressed := true when keyboard_n(m65_lshift) ='0' or keyboard_n(m65_rshift) = '0' else false;
+                        if (last_key_index >= 0 and shift_pressed and ps2_codes(current_key_index) = x"1E") then  -- Mega65 Shift + 2 = quote (")
+                            ps2_key(7 downto 0) <= x"52";  -- Send PS/2 code for '
+                        else
+                            -- default mapping.
+                            ps2_key(7 downto 0) <= ps2_codes(current_key_index);
+                        end if;
                         
-                        ps2_key(8) <= '1' when not keyboard_n(m65_ins_del) else '0'; -- ext bit for delete.
                         
-                                                        
-                        ps2_key(7 downto 0) <= ps2_codes(i);
+                        last_key_index := current_key_index;*/
+  
                     end if;
                 end loop;
             end if;
         end if;
     end process;
-    /*
-    init_keymap: process
-    begin
-        keymap(m65_esc)         <= apple_keycode_esc;
-        keymap(m65_1)           <= apple_keycode_1;
-        keymap(m65_2)           <= apple_keycode_2;
-        keymap(m65_3)           <= apple_keycode_3;
-        keymap(m65_4)           <= apple_keycode_4;
-        keymap(m65_5)           <= apple_keycode_5;
-        keymap(m65_6)           <= apple_keycode_6;
-        keymap(m65_7)           <= apple_keycode_7;
-        keymap(m65_8)           <= apple_keycode_8;
-        keymap(m65_9)           <= apple_keycode_9;
-        keymap(m65_0)           <= apple_keycode_0;
-        keymap(m65_a)           <= apple_keycode_a;
-        keymap(m65_b)           <= apple_keycode_b;
-        keymap(m65_c)           <= apple_keycode_c;
-        keymap(m65_d)           <= apple_keycode_d;
-        keymap(m65_e)           <= apple_keycode_e;
-        keymap(m65_f)           <= apple_keycode_f;
-        keymap(m65_g)           <= apple_keycode_g;
-        keymap(m65_h)           <= apple_keycode_h;
-        keymap(m65_i)           <= apple_keycode_i;
-        keymap(m65_j)           <= apple_keycode_j;
-        keymap(m65_k)           <= apple_keycode_k;
-        keymap(m65_l)           <= apple_keycode_l;
-        keymap(m65_m)           <= apple_keycode_m;
-        keymap(m65_n)           <= apple_keycode_n;
-        keymap(m65_i)           <= apple_keycode_i;
-        keymap(m65_j)           <= apple_keycode_j;
-        keymap(m65_k)           <= apple_keycode_k;
-        keymap(m65_l)           <= apple_keycode_l;
-        keymap(m65_m)           <= apple_keycode_m;
-        keymap(m65_n)           <= apple_keycode_n;
-        keymap(m65_o)           <= apple_keycode_o;
-        keymap(m65_p)           <= apple_keycode_p;
-        keymap(m65_q)           <= apple_keycode_q;
-        keymap(m65_r)           <= apple_keycode_r;
-        keymap(m65_s)           <= apple_keycode_s;
-        keymap(m65_t)           <= apple_keycode_t;
-        keymap(m65_u)           <= apple_keycode_u;
-        keymap(m65_v)           <= apple_keycode_v;
-        keymap(m65_w)           <= apple_keycode_w;
-        keymap(m65_x)           <= apple_keycode_x;
-        keymap(m65_y)           <= apple_keycode_y;
-        keymap(m65_z)           <= apple_keycode_z;
-        keymap(m65_left_shift)  <= apple_keycode_lshift;
-        keymap(m65_right_shift) <= apple_keycode_rshift;
-        keymap(m65_return)      <= apple_keycode_return;
-        keymap(m65_space)       <= apple_keycode_space;
-        wait;
-    end process;
-  
-    keyboard_proc: process(CLK_14M)
-    begin
-    if rising_edge(CLK_14M) then
-        if reset = '1' then
-            key_mapped      <= (others => '0');
-            key_index       <= 0;
-            toggle_bit      <= '1';
-            ps2_key         <= (others => '0');
-            ext_bit         <= '0';
-            prev_keyboard_n <= (others => '1');
-            pressed         <= '1';
-            current_key_valid <= '0';
-            current_active_key <= 0;
-        else
-            -- Emit only when key state changes
-            if keyboard_n(key_index) /= prev_keyboard_n(key_index) then
-                prev_keyboard_n(key_index) <= keyboard_n(key_index);
-                key_mapped <= keymap(key_index);
-
-                if keyboard_n(key_index) = '0' then
-                    -- Key pressed
-                    pressed <= '0';
-                    current_active_key <= key_index;
-                    current_key_valid <= '1';
-                else
-                    -- Key released
-                    pressed <= '1';
-                    key_index       <= 0;
-                    toggle_bit      <= '1';
-                    ps2_key         <= (others => '0');
-                    ext_bit         <= '0';
-                    prev_keyboard_n <= (others => '1');
-                    pressed         <= '1';
-                    current_key_valid <= '0';
-                    key_mapped <= (others => '0');
-                    if key_index = current_active_key then
-                        current_key_valid <= '0';
-                        --key_mapped <= (others => '0');
-                    end if;
-                end if;
-
-                toggle_bit <= not toggle_bit;
-
-                -- Emit key event (just once per transition)
-                ps2_key <= toggle_bit & pressed & ext_bit & std_logic_vector(keymap(key_index));
-            end if;
-
-            -- Advance scanner
-            key_index <= (key_index + 1) mod 47;
-        end if;
-    end if;
-    end process;
-    */
-    /*
-    process(CLK_14M)
-    begin
-        if rising_edge(CLK_14M) then
-            
-            if reset = '1' then
-                key_mapped <= (others => '0');
-                any_key_down <= '0';
-                toggle_bit <= '1';
-                ext_bit <= '0';
-                ps2_key <= (others => '0'); 
-            else
-
-                any_key_down <= not kb_key_pressed_n;
-                toggle_bit <= '0' when any_key_down = '1';
-                
-               
-                
-                if not keyboard_n(m65_esc ) then key_mapped <= apple_keycode_esc;
-                elsif not keyboard_n(m65_1) then key_mapped <= apple_keycode_1;
-                elsif not keyboard_n(m65_2) then key_mapped <= apple_keycode_2;
-                elsif not keyboard_n(m65_3) then key_mapped <= apple_keycode_3;
-                elsif not keyboard_n(m65_4) then key_mapped <= apple_keycode_4;
-                elsif not keyboard_n(m65_5) then key_mapped <= apple_keycode_5;
-                elsif not keyboard_n(m65_6) then key_mapped <= apple_keycode_6;
-                elsif not keyboard_n(m65_7) then key_mapped <= apple_keycode_7;
-                elsif not keyboard_n(m65_8) then key_mapped <= apple_keycode_8;
-                elsif not keyboard_n(m65_9) then key_mapped <= apple_keycode_9;
-                elsif not keyboard_n(m65_tab) then key_mapped <= apple_keycode_tab;
-                elsif not keyboard_n(m65_q) then key_mapped <= apple_keycode_q;
-                elsif not keyboard_n(m65_w) then key_mapped <= apple_keycode_w;
-                elsif not keyboard_n(m65_e) then key_mapped <= apple_keycode_e;
-                elsif not keyboard_n(m65_r) then key_mapped <= apple_keycode_r;
-                elsif not keyboard_n(m65_y) then key_mapped <= apple_keycode_y;
-                elsif not keyboard_n(m65_t) then key_mapped <= apple_keycode_t;
-                elsif not keyboard_n(m65_u) then key_mapped <= apple_keycode_u;
-                elsif not keyboard_n(m65_i) then key_mapped <= apple_keycode_i;
-                elsif not keyboard_n(m65_o) then key_mapped <= apple_keycode_o;
-                elsif not keyboard_n(m65_a) then key_mapped <= apple_keycode_a;
-                elsif not keyboard_n(m65_d) then key_mapped <= apple_keycode_d;
-                elsif not keyboard_n(m65_s) then key_mapped <= apple_keycode_s;
-                elsif not keyboard_n(m65_h) then key_mapped <= apple_keycode_h;
-                elsif not keyboard_n(m65_f) then key_mapped <= apple_keycode_f;
-                elsif not keyboard_n(m65_g) then key_mapped <= apple_keycode_g;
-                elsif not keyboard_n(m65_j) then key_mapped <= apple_keycode_j;
-                elsif not keyboard_n(m65_k) then key_mapped <= apple_keycode_k;
-                elsif not keyboard_n(m65_semicolon) then key_mapped <= apple_keycode_semicolon;
-                elsif not keyboard_n(m65_l) then key_mapped <= apple_keycode_l;
-                elsif not keyboard_n(m65_o) then key_mapped <= apple_keycode_o;
-                elsif not keyboard_n(m65_p) then key_mapped <= apple_keycode_p;
-                elsif not keyboard_n(m65_z) then key_mapped <= apple_keycode_z;
-                elsif not keyboard_n(m65_x) then key_mapped <= apple_keycode_x;
-                elsif not keyboard_n(m65_c) then key_mapped <= apple_keycode_c;
-                elsif not keyboard_n(m65_v) then key_mapped <= apple_keycode_v;
-                elsif not keyboard_n(m65_b) then key_mapped <= apple_keycode_b;
-                elsif not keyboard_n(m65_n) then key_mapped <= apple_keycode_n;
-                elsif not keyboard_n(m65_m) then key_mapped <= apple_keycode_m;
-                elsif not keyboard_n(m65_comma) then key_mapped <= apple_keycode_comma;
-                elsif not keyboard_n(m65_dot) then key_mapped <= apple_keycode_period;
-                elsif not keyboard_n(m65_slash) then key_mapped <= apple_keycode_slash;
-                elsif not keyboard_n(m65_return) then key_mapped <= apple_keycode_return;
-                elsif not keyboard_n(m65_space) then key_mapped <= apple_keycode_space;
-                elsif not keyboard_n(m65_left_shift) then key_mapped <= apple_keycode_lshift;
-                elsif not keyboard_n(m65_right_shift) then key_mapped <= apple_keycode_rshift;
-                elsif not keyboard_n(m65_capslock) then key_mapped <= apple_keycode_capslock;
-                elsif any_key_down = '0' then
-                    ps2_key <= (others => '0');
-                    key_mapped <= (others => '0');
-                    ext_bit <= '0';
-                    --toggle_bit <= '0'; -- kinda works with this.
-                    toggle_bit <= '1';
-                end if;
-                    
-                    -- PS/2-style key data - // [8] - extended, [9] - pressed, [10] - toggles with every press/release
-                ps2_key <= toggle_bit & any_key_down & ext_bit & std_logic_vector(key_mapped);
-                    
-                end if;
-           end if;        
-    end process;
-    */
-
+   
 end Behavioral;

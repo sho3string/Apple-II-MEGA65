@@ -227,7 +227,7 @@ HEAP            .BLOCK 1
 ; it comes to folders with a lot of files
 #else
 
-HEAP_SIZE       .EQU 27648                      ; 29696 - 2048 = 27648
+HEAP_SIZE       .EQU 28160                     ; 30208 - 2048 = 28160
 HEAP            .BLOCK 1
 
 ; The monitor variables use 22 words, round to 32 for being safe and subtract

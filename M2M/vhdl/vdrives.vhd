@@ -100,7 +100,7 @@ package vdrives_pkg is
    type vd_std_array is array(natural range <>) of std_logic;
    type vd_unsigned_array is array(natural range <>) of unsigned;
 
-   constant AW: natural := 13;   -- 14-bit
+   constant AW: natural := 8;    -- 9 bit -- 14-bit
    constant DW: natural := 7;    -- 8-bit
 end package;
 
@@ -115,7 +115,7 @@ use xpm.vcomponents.all;
 
 entity vdrives is
 generic (
-   VDNUM             : natural := 1;      -- amount of virtual drives, MiSTer supports a maximum of 10
+   VDNUM             : natural := 3;      -- amount of virtual drives, MiSTer supports a maximum of 10
    BLKSZ             : natural := 2       -- block size for LBA adressing: 0..7: 0 = 128, 1 = 256, 2 = 512(default), .. 7 = 16384
 );
 port (
