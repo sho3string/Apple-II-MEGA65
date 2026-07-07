@@ -14,11 +14,12 @@ library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity keyboard is
+entity keyboard_apple is
 
   port (
     CLK_14M  : in std_logic;
     PS2_Key  : in std_logic_vector(10 downto 0);  -- From PS/2 port
+    mega65_caps : in std_logic;         -- track caps lock key from mega65
     reads    : in std_logic;            -- Read strobe
     reset    : in std_logic;
     akd      : buffer std_logic;        -- Any key down
@@ -29,10 +30,11 @@ entity keyboard is
   	video_toggle:  out std_logic := '0';	  -- signal to control change of video modes
     palette_toggle:out std_logic := '0'	  -- signal to control change of paleetes
 	);
-end keyboard;
+end keyboard_apple;
 
-architecture rtl of keyboard is
+architecture rtl of keyboard_apple is
 
+  signal q_signal           : std_logic_vector(7 downto 0); -- Intermediate signal
   signal rom_addr           : std_logic_vector(10 downto 0);
   signal rom_out            : unsigned(7 downto 0);
   signal junction_code      : std_logic_vector(7 downto 0);
@@ -70,15 +72,41 @@ architecture rtl of keyboard is
 
 begin
 
-
-  keyboard_rom : work.spram
-  generic map (11,8,"rtl/roms/keyboard.mif")
+  rom_out <= unsigned(q_signal);
+  
+  /*
+  keyboard_rom : entity work.spram
+  generic map (11,8,"../../CORE/Apple-II_MiSTer/rtl/roms/keyboard.mif")
   port map (
    address => std_logic_vector(rom_addr),
    clock => CLK_14M,
    data => (others=>'0'),
    wren => '0',
-   unsigned(q) => rom_out);
+   --unsigned(q) => rom_out);
+   q => q_signal);*/
+   
+  keyboard_rom : entity work.dualport_2clk_ram
+    generic map 
+    (
+        ADDR_WIDTH   => 11,
+        DATA_WIDTH   => 8,
+        ROM_PRELOAD  => true,
+        ROM_FILE     => "../../CORE/Apple-II_MiSTer-master/rtl/roms/keyboard.hex",
+        ROM_FILE_HEX => true
+    )
+    port map
+    (
+        clock_a   => CLK_14M,
+        wren_a    => '0',
+        address_a => std_logic_vector(rom_addr),
+        data_a    => (others=>'0'),
+    
+        clock_b   => CLK_14M,
+        address_b => std_logic_vector(rom_addr),
+        data_b    => (others=>'0'),
+        q_b       => q_signal
+        --unsigned(q_b) => rom_out
+    );
 
   K <= key_pressed & rom_out(6 downto 0);
 
@@ -87,9 +115,10 @@ begin
     if reset = '1' then
       caplock <= '0';
     elsif rising_edge(CLK_14M) then
-      if state = KEY_UP and code = CAPS_LOCK then
-        caplock <= not caplock;
-      end if;
+      --if state = KEY_UP and code = CAPS_LOCK then
+      -- no need to track KEY_UP since this is done internally on the Mega65
+        caplock <= mega65_caps;--not caplock;
+      --end if;
     end if;
   end process;
 
