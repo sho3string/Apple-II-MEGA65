@@ -341,8 +341,6 @@ begin
    );
    
    
-   
-  
    combined_reset_proc : process (all)
    begin
       reset_core <= '0';

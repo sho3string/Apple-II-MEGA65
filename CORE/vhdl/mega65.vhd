@@ -437,7 +437,7 @@ begin
    main_joy_2_right_n_o <= '1';
    main_joy_2_fire_n_o  <= '1';
 
-   main_drive_led_col_o   <= x"FF0000"; -- red for the apple ii, blue for now
+   main_drive_led_col_o   <= x"FF0000"; -- red for the apple ii
   
    clk_gen : entity work.clk
       port map (
