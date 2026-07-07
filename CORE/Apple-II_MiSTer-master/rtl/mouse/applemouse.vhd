@@ -167,7 +167,8 @@ begin
     rst      => RESET,
     cs       => DEVICE_SELECT,
     rw       => RNW,
-    addr     => std_logic_vector(A)(1 downto 0),
+    --addr     => std_logic_vector(A)(1 downto 0),
+    addr => std_logic_vector(A(1 downto 0)), -- first slice then convert 
     data_in  => std_logic_vector(D_IN),
     data_out => pia_dout,
     irqa     => open,
@@ -232,7 +233,8 @@ begin
   mcu_pb_in(5 downto 4) <= "11";
 
   -- 341-0270-C
-  rom_addr <= pia_pb_out(3 downto 1) & std_logic_vector(A)(7 downto 0);
+  --rom_addr <= pia_pb_out(3 downto 1) & std_logic_vector(A)(7 downto 0);
+  rom_addr <= pia_pb_out(3 downto 1) & std_logic_vector(A(7 downto 0)); -- first slcie then convert
   rom : entity work.applemouse_rom port map (
     addr => rom_addr,
     clk  => CLK_14M,

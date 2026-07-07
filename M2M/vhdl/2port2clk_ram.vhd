@@ -14,7 +14,7 @@ entity dualport_2clk_ram is
    generic (
        ADDR_WIDTH     : integer := 12;           -- The size of the RAM will be 2**ADDR_WIDTH
        DATA_WIDTH     : integer := 8;
-       MAXIMUM_SIZE   : integer := integer'high; -- Maximum size of RAM, independent from ADDR_WIDTH
+       --MAXIMUM_SIZE   : integer := integer'high; -- Maximum size of RAM, independent from ADDR_WIDTH
        ROM_PRELOAD    : boolean := false;        -- Preload a ROM
        ROM_FILE       : string  := "";
        ROM_FILE_HEX   : boolean := false;        -- hexadecimal format (using hread) instead of binary format (using read)

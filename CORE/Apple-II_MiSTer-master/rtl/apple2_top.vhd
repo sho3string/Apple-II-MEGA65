@@ -68,6 +68,7 @@ port (
     ROMSWITCH      : in std_logic;
 
 	PS2_Key        : in  std_logic_vector(10 downto 0);
+	mega65_caps    : in  std_logic;
 	joy            : in  std_logic_vector(5 downto 0);
 	joy_an         : in  std_logic_vector(15 downto 0);
 
@@ -187,6 +188,8 @@ architecture arch of apple2_top is
   signal IO_SELECT, DEVICE_SELECT : std_logic_vector(7 downto 0);
   signal IO_STROBE : std_logic;
 
+  --temporary signal
+  signal ADDR_as_slv : std_logic_vector(15 downto 0);
   signal ADDR : unsigned(15 downto 0);
   signal D, PD: unsigned(7 downto 0);
   signal DISK_DO, HDD_DO : unsigned(7 downto 0);
@@ -243,7 +246,8 @@ architecture arch of apple2_top is
   signal closed_apple : std_logic;
 begin
 
-
+  -- Convert ADDR to std_logic_vector before use
+  ADDR_as_slv <= std_logic_vector(ADDR);
   -- In the Apple ][, this was a 555 timer
   power_on : process(CLK_14M)
   begin
@@ -394,10 +398,11 @@ begin
 	 ioctl_wait => ioctl_wait
     );
 
-  keyboard : entity work.keyboard port map (
+  keyboard : entity work.keyboard_apple port map (
     PS2_Key  => PS2_Key,
+    mega65_caps => mega65_caps,
     CLK_14M  => CLK_14M,
-	 reset    => reset_cold, -- use reset_cold, not reset so we keep the
+	reset    => reset_cold, -- use reset_cold, not reset so we keep the
 	                         -- keyboard state machine running for key up 
 									 -- events during / after reset
     reads    => read_key,
@@ -465,7 +470,7 @@ begin
     ram_we         => HDD_RAM_WE
     );
 
-  mb_4 : work.mockingboard
+  mb_4 : entity work.mockingboard
     port map (
       CLK_14M    => CLK_14M,
       PHASE_ZERO => PHASE_ZERO,
@@ -474,7 +479,8 @@ begin
       I_RESET_L => not reset,
       I_ENA_H   => mb_4_inslot,
 
-      I_ADDR    => std_logic_vector(ADDR)(7 downto 0),
+      --I_ADDR    => std_logic_vector(ADDR)(7 downto 0),
+      I_ADDR => ADDR_as_slv(7 downto 0),
       I_DATA    => std_logic_vector(D),
       unsigned(O_DATA) => PSG_4_DO,
       I_RW_L    => not cpu_we,
@@ -486,7 +492,7 @@ begin
       unsigned(O_AUDIO_L) => psg_4_audio_l,
       unsigned(O_AUDIO_R) => psg_4_audio_r
       );
-  mb_5 : work.mockingboard
+  mb_5 : entity work.mockingboard
     port map (
       CLK_14M    => CLK_14M,
       PHASE_ZERO => PHASE_ZERO,
@@ -495,7 +501,7 @@ begin
       I_RESET_L => not reset,
       I_ENA_H   => mb_5_inslot,
 
-      I_ADDR    => std_logic_vector(ADDR)(7 downto 0),
+      I_ADDR    => ADDR_as_slv(7 downto 0),
       I_DATA    => std_logic_vector(D),
       unsigned(O_DATA) => PSG_5_DO,
       I_RW_L    => not cpu_we,

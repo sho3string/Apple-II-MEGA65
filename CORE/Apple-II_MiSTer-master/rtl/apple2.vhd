@@ -126,6 +126,7 @@ architecture rtl of apple2 is
 
   -- Main ROM signals
   signal rom_out : unsigned(7 downto 0);
+  signal q_signal : std_logic_vector(7 downto 0); -- Intermediate signal
   signal rom_addr : unsigned(13 downto 0);
 
   -- Address decoder signals
@@ -174,6 +175,7 @@ architecture rtl of apple2 is
   signal video_rom_select : std_logic;
 begin
 
+  rom_out <= unsigned(q_signal);
   CLK_2M <= Q3;
 
   ram_addr <= CPU_RAM_ADDR when PHASE_ZERO = '1' else "00" & VIDEO_ADDRESS;
@@ -544,13 +546,36 @@ begin
 
   -- Original Apple had asynchronous ROMs.  We use a synchronous ROM
   -- that needs its address earlier, hence the odd clock.
-  roms : work.spram
+  /*roms : work.spram
   generic map (14,8,"rtl/roms/apple2e.mif")
   port map (
    address => std_logic_vector(rom_addr),
    clock => CLK_14M,
    data => (others=>'0'),
    wren => '0',
-   unsigned(q) => rom_out);
+   unsigned(q) => rom_out);*/
+   
+  roms : entity work.dualport_2clk_ram
+    generic map 
+    (
+        ADDR_WIDTH   => 14,
+        DATA_WIDTH   => 8,
+        ROM_PRELOAD  => true,
+        ROM_FILE     => "../../CORE/Apple-II_MiSTer-master/rtl/roms/apple2e.hex",
+        ROM_FILE_HEX => true
+    )
+    port map
+    (
+        clock_a   => CLK_14M,
+        wren_a    => '0',
+        address_a => std_logic_vector(rom_addr),
+        data_a    => (others=>'0'),
+    
+        clock_b   => CLK_14M,
+        address_b => std_logic_vector(rom_addr),
+        data_b => (others=>'0'),
+        q_b => q_signal
+        --unsigned(q_b) => rom_out
+    );
 
 end rtl;

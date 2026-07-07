@@ -104,7 +104,7 @@ port (
    clk_i                   : in  std_logic;              -- 100 MHz clock
 
    -- Share clock and reset with the framework
-   main_clk_o              : out std_logic;              -- CORE's 54 MHz clock
+   main_clk_o              : out std_logic;              -- CORE's 57 MHz clock
    main_rst_o              : out std_logic;              -- CORE's reset, synchronized
 
    -- M2M's reset manager provides 2 signals:
@@ -226,6 +226,8 @@ architecture synthesis of MEGA65_Core is
 
 signal main_clk               : std_logic;               -- Core main clock
 signal main_rst               : std_logic;
+signal video_clk              : std_logic;               
+signal video_rst              : std_logic;
 
 ---------------------------------------------------------------------------------------------
 -- main_clk (MiSTer core's clock)
@@ -240,30 +242,145 @@ signal main_rst               : std_logic;
 ---------------------------------------------------------------------------------------------
 
 -- Democore menu items
-constant C_MENU_HDMI_16_9_50   : natural := 12;
-constant C_MENU_HDMI_16_9_60   : natural := 13;
-constant C_MENU_HDMI_4_3_50    : natural := 14;
-constant C_MENU_HDMI_5_4_50    : natural := 15;
-constant C_MENU_HDMI_640_60    : natural := 16;
-constant C_MENU_HDMI_720_5994  : natural := 17;
-constant C_MENU_SVGA_800_60    : natural := 18;
-constant C_MENU_CRT_EMULATION  : natural := 30;
-constant C_MENU_HDMI_ZOOM      : natural := 31;
-constant C_MENU_IMPROVE_AUDIO  : natural := 32;
+constant C_MENU_HDMI_16_9_50   : natural := 10;
+constant C_MENU_HDMI_16_9_60   : natural := 11;
+constant C_MENU_HDMI_4_3_50    : natural := 12;
+constant C_MENU_HDMI_5_4_50    : natural := 13;
+constant C_MENU_HDMI_640_60    : natural := 14;
+constant C_MENU_HDMI_720_5994  : natural := 15;
+constant C_MENU_SVGA_800_60    : natural := 16;
+constant C_MENU_CRT_EMULATION  : natural := 22;
+constant C_MENU_HDMI_ZOOM      : natural := 23;
+constant C_MENU_IMPROVE_AUDIO  : natural := 24;
+
+-- Video gen
+signal div                       : std_logic_vector(2 downto 0);
+signal ce_pix                    : std_logic; -- pixel clock 7.15875 PAL - 14.3175 NTSC
+ 
+signal HSync,VSync,HBlank,VBlank : std_logic;
+
+signal ioctl_index               : std_logic_vector(7 downto 0);
+-- ROM devices for the core
+signal qnice_dn_addr             : std_logic_vector(24 downto 0);
+signal qnice_dn_data             : std_logic_vector(7 downto 0);
+signal qnice_dn_wr               : std_logic;
+
+-- Unprocessed video output from the Galaga core
+signal main_video_red      : std_logic_vector(7 downto 0);   
+signal main_video_green    : std_logic_vector(7 downto 0);
+signal main_video_blue     : std_logic_vector(7 downto 0);
+signal main_video_vs       : std_logic;
+signal main_video_hs       : std_logic;
+signal main_video_hblank   : std_logic;
+signal main_video_vblank   : std_logic;
+
+
+signal video_red           : std_logic_vector(7 downto 0);
+signal video_green         : std_logic_vector(7 downto 0);
+signal video_blue          : std_logic_vector(7 downto 0);
+signal video_vblank        : std_logic;
+signal video_hblank        : std_logic;
+signal video_vs            : std_logic;
+signal video_hs            : std_logic;
+signal video_de            : std_logic;
+
+signal gamma_bus           : std_logic_vector(21 downto 0);
+
+signal hdmi_width          : std_logic_vector(11 downto 0);
+signal hdmi_height         : std_logic_vector(11 downto 0);
+
+signal ar                  : std_logic_vector(1 downto 0);
+signal ARX                 : std_logic_vector(11 downto 0);
+signal ARY                 : std_logic_vector(11 downto 0);
+
+signal ioctl_download      : std_logic := '0';
 
 -- QNICE clock domain
-signal qnice_demo_vd_data_o   : std_logic_vector(15 downto 0);
-signal qnice_demo_vd_ce       : std_logic;
-signal qnice_demo_vd_we       : std_logic;
+signal qnice_apple_ce      : std_logic;
+signal qnice_apple_we      : std_logic;
+signal qnice_apple_data    : std_logic_vector(15 downto 0);
+
+
+signal qnice_apple_mount0_buf_addr     : std_logic_vector(17 downto 0);
+signal qnice_apple_mount0_buf_ram_wait : std_logic;
+signal qnice_apple_mount0_buf_ram_we   : std_logic;
+signal qnice_apple_mount0_buf_ram_ce   : std_logic;
+signal qnice_apple_mount0_buf_ram_data : std_logic_vector(7 downto 0);
+
+signal qnice_disk0_write               : std_logic;
+signal qnice_disk0_read                : std_logic;
+signal qnice_disk0_address             : std_logic_vector(31 downto 0);
+signal qnice_disk0_writedata           : std_logic_vector(15 downto 0);
+signal qnice_disk0_byteenable          : std_logic_vector( 1 downto 0);
+signal qnice_disk0_burstcount          : std_logic_vector( 7 downto 0);
+signal qnice_disk0_readdata            : std_logic_vector(15 downto 0);
+signal qnice_disk0_readdatavalid       : std_logic;
+signal qnice_disk0_waitrequest         : std_logic;
+
+signal qnice_apple_mount1_buf_addr     : std_logic_vector(17 downto 0);
+signal qnice_apple_mount1_buf_ram_wait : std_logic;
+signal qnice_apple_mount1_buf_ram_we   : std_logic;
+signal qnice_apple_mount1_buf_ram_ce   : std_logic;
+signal qnice_apple_mount1_buf_ram_data : std_logic_vector(7 downto 0);
+
+signal qnice_disk1_write               : std_logic;
+signal qnice_disk1_read                : std_logic;
+signal qnice_disk1_address             : std_logic_vector(31 downto 0);
+signal qnice_disk1_writedata           : std_logic_vector(15 downto 0);
+signal qnice_disk1_byteenable          : std_logic_vector( 1 downto 0);
+signal qnice_disk1_burstcount          : std_logic_vector( 7 downto 0);
+signal qnice_disk1_readdata            : std_logic_vector(15 downto 0);
+signal qnice_disk1_readdatavalid       : std_logic;
+signal qnice_disk1_waitrequest         : std_logic;
+
+signal qnice_apple_mount2_buf_addr     : std_logic_vector(17 downto 0);
+signal qnice_apple_mount2_buf_ram_wait : std_logic;
+signal qnice_apple_mount2_buf_ram_we   : std_logic;
+signal qnice_apple_mount2_buf_ram_ce   : std_logic;
+signal qnice_apple_mount2_buf_ram_data : std_logic_vector(7 downto 0);
+
+signal qnice_disk2_write               : std_logic;
+signal qnice_disk2_read                : std_logic;
+signal qnice_disk2_address             : std_logic_vector(31 downto 0);
+signal qnice_disk2_writedata           : std_logic_vector(15 downto 0);
+signal qnice_disk2_byteenable          : std_logic_vector( 1 downto 0);
+signal qnice_disk2_burstcount          : std_logic_vector( 7 downto 0);
+signal qnice_disk2_readdata            : std_logic_vector(15 downto 0);
+signal qnice_disk2_readdatavalid       : std_logic;
+signal qnice_disk2_waitrequest         : std_logic;
+
+---------------------------------------------------------------------------------------------
+-- hr_clk
+---------------------------------------------------------------------------------------------
+
+signal hr_disk0_write               : std_logic;
+signal hr_disk0_read                : std_logic;
+signal hr_disk0_address             : std_logic_vector(31 downto 0);
+signal hr_disk0_writedata           : std_logic_vector(15 downto 0);
+signal hr_disk0_byteenable          : std_logic_vector( 1 downto 0);
+signal hr_disk0_burstcount          : std_logic_vector( 7 downto 0);
+signal hr_disk0_readdata            : std_logic_vector(15 downto 0);
+signal hr_disk0_readdatavalid       : std_logic;
+signal hr_disk0_waitrequest         : std_logic;
+
+signal hr_disk1_write               : std_logic;
+signal hr_disk1_read                : std_logic;
+signal hr_disk1_address             : std_logic_vector(31 downto 0);
+signal hr_disk1_writedata           : std_logic_vector(15 downto 0);
+signal hr_disk1_byteenable          : std_logic_vector( 1 downto 0);
+signal hr_disk1_burstcount          : std_logic_vector( 7 downto 0);
+signal hr_disk1_readdata            : std_logic_vector(15 downto 0);
+signal hr_disk1_readdatavalid       : std_logic;
+signal hr_disk1_waitrequest         : std_logic;
 
 begin
 
-   hr_core_write_o      <= '0';
-   hr_core_read_o       <= '0';
-   hr_core_address_o    <= (others => '0');
-   hr_core_writedata_o  <= (others => '0');
-   hr_core_byteenable_o <= (others => '0');
-   hr_core_burstcount_o <= (others => '0');
+   --hr_core_write_o      <= '0';
+   --hr_core_read_o       <= '0';
+   --hr_core_address_o    <= (others => '0');
+   --hr_core_writedata_o  <= (others => '0');
+   --hr_core_byteenable_o <= (others => '0');
+   --hr_core_burstcount_o <= (others => '0');
 
    -- Tristate all expansion port drivers that we can directly control
    -- @TODO: As soon as we support modules that can act as busmaster, we need to become more flexible here
@@ -298,6 +415,16 @@ begin
    cart_io2_o           <= '0';
    cart_a_o             <= (others => '0');
    cart_d_o             <= (others => '0');
+   
+   -- IEC port: unused by the Apple II core
+   iec_reset_n_o        <= '1';
+   iec_atn_n_o          <= '1';
+   iec_clk_en_o         <= '0';
+   iec_clk_n_o          <= '1';
+   iec_data_en_o        <= '0';
+   iec_data_n_o         <= '1';
+   iec_srq_en_o         <= '0';
+   iec_srq_n_o          <= '1';
 
    main_joy_1_up_n_o    <= '1';
    main_joy_1_down_n_o  <= '1';
@@ -310,37 +437,97 @@ begin
    main_joy_2_right_n_o <= '1';
    main_joy_2_fire_n_o  <= '1';
 
-
-   -- MMCME2_ADV clock generators:
-   --   @TODO YOURCORE:       54 MHz
+   main_drive_led_col_o   <= x"FF0000"; -- red for the apple ii, blue for now
+  
    clk_gen : entity work.clk
       port map (
          sys_clk_i         => clk_i,           -- expects 100 MHz
-         main_clk_o        => main_clk,        -- CORE's 54 MHz clock
-         main_rst_o        => main_rst         -- CORE's reset, synchronized
+         main_clk_o        => main_clk,        -- CORE's 14.318181 MHz clock
+         main_rst_o        => main_rst,        -- CORE's reset, synchronized
+         video_clk_o       => video_clk,       -- CORE's video clock
+         video_rst_o       => video_rst
+         
       ); -- clk_gen
+      
+   ---------------------------------------------------------------------------------------------
+   -- hr_clk (HyperRAM clock)
+   ---------------------------------------------------------------------------------------------
+   /*i_avm_arbit : entity work.avm_arbit
+      generic map (
+         G_PREFER_SWAP  => true,
+         G_ADDRESS_SIZE => 32,
+         G_DATA_SIZE    => 16 
+      )
+      port map (
+         clk_i                  => hr_clk_i,
+         rst_i                  => hr_rst_i,
+         s0_avm_write_i         => hr_disk0_write,
+         s0_avm_read_i          => hr_disk0_read,
+         s0_avm_address_i       => hr_disk0_address,
+         s0_avm_writedata_i     => hr_disk0_writedata,
+         s0_avm_byteenable_i    => hr_disk0_byteenable,
+         s0_avm_burstcount_i    => hr_disk0_burstcount,
+         s0_avm_readdata_o      => hr_disk0_readdata,
+         s0_avm_readdatavalid_o => hr_disk0_readdatavalid,
+         s0_avm_waitrequest_o   => hr_disk0_waitrequest,
+         s1_avm_write_i         => hr_disk1_write,
+         s1_avm_read_i          => hr_disk1_read,
+         s1_avm_address_i       => hr_disk1_address,
+         s1_avm_writedata_i     => hr_disk1_writedata,
+         s1_avm_byteenable_i    => hr_disk1_byteenable,
+         s1_avm_burstcount_i    => hr_disk1_burstcount,
+         s1_avm_readdata_o      => hr_disk1_readdata,
+         s1_avm_readdatavalid_o => hr_disk1_readdatavalid,
+         s1_avm_waitrequest_o   => hr_disk1_waitrequest,
+         m_avm_write_o          => hr_core_write_o,
+         m_avm_read_o           => hr_core_read_o,
+         m_avm_address_o        => hr_core_address_o,
+         m_avm_writedata_o      => hr_core_writedata_o,
+         m_avm_byteenable_o     => hr_core_byteenable_o,
+         m_avm_burstcount_o     => hr_core_burstcount_o,
+         m_avm_readdata_i       => hr_core_readdata_i,
+         m_avm_readdatavalid_i  => hr_core_readdatavalid_i,
+         m_avm_waitrequest_i    => hr_core_waitrequest_i
+      ); -- i_avm_arbit
+    */
 
-   main_clk_o  <= main_clk;
-   main_rst_o  <= main_rst;
-   video_clk_o <= main_clk;
-   video_rst_o <= main_rst;
-
+   main_clk_o   <= main_clk;
+   main_rst_o   <= main_rst;
+   video_clk_o  <= video_clk;
+   video_rst_o  <= video_rst;
+   
+   video_red_o      <= video_red;
+   video_green_o    <= video_green;
+   video_blue_o     <= video_blue;
+   video_vs_o       <= video_vs;
+   video_hs_o       <= video_hs;
+   video_hblank_o   <= video_hblank;
+   video_vblank_o   <= video_vblank;
+   video_ce_o       <= ce_pix;
+   
    ---------------------------------------------------------------------------------------------
    -- main_clk (MiSTer core's clock)
    ---------------------------------------------------------------------------------------------
 
-   -- MEGA65's power led: By default, it is on and glows green when the MEGA65 is powered on.
-   -- We switch it to blue when a long reset is detected and as long as the user keeps pressing the preset button
+    
    main_power_led_o     <= '1';
    main_power_led_col_o <= x"0000FF" when main_reset_m2m_i else x"00FF00";
-
+   
    -- main.vhd contains the actual MiSTer core
    i_main : entity work.main
       generic map (
          G_VDNUM              => C_VDNUM
       )
       port map (
+         apple_qnice_clk_i    => qnice_clk_i,
+         apple_qnice_addr_i   => qnice_dev_addr_i,
+         apple_qnice_data_i   => qnice_dev_data_i,
+         apple_qnice_data_o   => qnice_apple_data,
+         apple_qnice_ce_i     => qnice_apple_ce,
+         apple_qnice_we_i     => qnice_apple_we,
+         
          clk_main_i           => main_clk,
+         clk_video_i          => video_clk,
          reset_soft_i         => main_reset_core_i,
          reset_hard_i         => main_reset_m2m_i,
          pause_i              => main_pause_core_i,
@@ -348,16 +535,15 @@ begin
          clk_main_speed_i     => CORE_CLK_SPEED,
 
          -- Video output
-         -- This is PAL 720x576 @ 50 Hz (pixel clock 27 MHz), but synchronized to main_clk (54 MHz).
-         video_ce_o           => video_ce_o,
-         video_ce_ovl_o       => video_ce_ovl_o,
-         video_red_o          => video_red_o,
-         video_green_o        => video_green_o,
-         video_blue_o         => video_blue_o,
-         video_vs_o           => video_vs_o,
-         video_hs_o           => video_hs_o,
-         video_hblank_o       => video_hblank_o,
-         video_vblank_o       => video_vblank_o,
+         video_ce_o           => open,
+         video_ce_ovl_o       => open,
+         video_red_o          => main_video_red,
+         video_green_o        => main_video_green,
+         video_blue_o         => main_video_blue,
+         video_vs_o           => main_video_vs,
+         video_hs_o           => main_video_hs,
+         video_hblank_o       => main_video_hblank,
+         video_vblank_o       => main_video_vblank,
 
          -- audio output (pcm format, signed values)
          audio_left_o         => main_audio_left_o,
@@ -383,9 +569,50 @@ begin
          pot1_x_i             => main_pot1_x_i,
          pot1_y_i             => main_pot1_y_i,
          pot2_x_i             => main_pot2_x_i,
-         pot2_y_i             => main_pot2_y_i
+         pot2_y_i             => main_pot2_y_i,
+         
+         ioctl_download       => ioctl_download,
+         
+         ioctl_index          => ioctl_index,
+         ioctl_wr             => qnice_dn_wr,
+         ioctl_addr           => qnice_dn_addr,  
+         ioctl_data           => qnice_dn_data,
+         
+         drive_led_o          => main_drive_led_o
+
       ); -- i_main
 
+    /*       Res        Hz frequency  Vertical frequency   Pixel clock
+    Apple-II 568x192	15.7	      60.2	               14.32
+    */
+    
+    process (video_clk) -- 57.27 MHz
+    begin
+        if rising_edge(video_clk) then
+            ce_pix       <= '0';
+            video_ce_ovl_o <= '0';
+
+            div <= std_logic_vector(unsigned(div) + 1);
+            ce_pix <= '1' when div(1 downto 0) = "11" else '0'; -- AND lower 2 bits
+            
+            if div(0) = '1' then
+                video_ce_ovl_o <= '1'; -- 28 MHz
+            end if;
+            
+            video_red   <= main_video_red;
+            video_green <= main_video_green;
+            video_blue  <= main_video_blue ;
+            
+            video_hs     <= main_video_hs;
+            video_vs     <= main_video_vs;
+            video_hblank <= main_video_hblank;
+            video_vblank <= main_video_vblank;
+            video_de     <= not (main_video_hblank or main_video_vblank);
+            
+         end if;
+     end process;
+     
+            
    ---------------------------------------------------------------------------------------------
    -- Audio and video settings (QNICE clock domain)
    ---------------------------------------------------------------------------------------------
@@ -419,8 +646,8 @@ begin
    --    "Standard VGA":                     qnice_retro15kHz_o=0 and qnice_csync_o=0
    --    "Retro 15 kHz with HSync and VSync" qnice_retro15kHz_o=1 and qnice_csync_o=0
    --    "Retro 15 kHz with CSync"           qnice_retro15kHz_o=1 and qnice_csync_o=1
-   qnice_retro15kHz_o         <= '0';
-   qnice_csync_o              <= '0';
+   qnice_retro15kHz_o         <= '1';
+   qnice_csync_o              <= '1';
    qnice_osm_cfg_scaling_o    <= (others => '1');
 
    -- ascal filters that are applied while processing the input
@@ -446,102 +673,73 @@ begin
    ---------------------------------------------------------------------------------------------
 
    core_specific_devices : process(all)
+      -- Check if QNICE wants to access its "CSR Window" and if so, we ignore writes.
+      --variable qnice_csr_window         : std_logic;
    begin
       -- make sure that this is x"EEEE" by default and avoid a register here by having this default value
       qnice_dev_data_o     <= x"EEEE";
       qnice_dev_wait_o     <= '0';
+      qnice_apple_ce       <= '0';
+      qnice_apple_we       <= '0';
+      qnice_apple_mount0_buf_addr <= (others => '0');
+      qnice_apple_mount0_buf_ram_ce <= '0';
+      qnice_apple_mount0_buf_ram_we <= '0';
 
-      -- Demo core specific: Delete before starting to port your core
-      qnice_demo_vd_ce     <= '0';
-      qnice_demo_vd_we     <= '0';
 
       case qnice_dev_id_i is
+         when C_DEV_APPLE_VDRIVES =>
+            qnice_apple_ce       <= qnice_dev_ce_i;
+            qnice_apple_we       <= qnice_dev_we_i;
+            qnice_dev_data_o     <= qnice_apple_data;   
 
-         -- Demo core specific stuff: delete before porting your own core
-         when C_DEV_DEMO_VD =>
-            qnice_demo_vd_ce     <= qnice_dev_ce_i;
-            qnice_demo_vd_we     <= qnice_dev_we_i;
-            qnice_dev_data_o     <= qnice_demo_vd_data_o;
-
-         -- @TODO YOUR RAMs or ROMs (e.g. for cartridges) or other devices here
-         -- Device numbers need to be >= 0x0100
-
+         -- Disk mount buffer drive 0
+         when C_DEV_APPLE_MOUNT0 =>
+            qnice_apple_mount0_buf_ram_we <= qnice_dev_ce_i and qnice_dev_we_i;
+            qnice_dev_data_o              <= x"00" & qnice_apple_mount0_buf_ram_data;
+            
+         -- Disk mount buffer drive 1
+          when C_DEV_APPLE_MOUNT1 =>
+            qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
+            qnice_dev_data_o              <= x"00" & qnice_apple_mount1_buf_ram_data;
+        
          when others => null;
       end case;
    end process core_specific_devices;
-
-   ---------------------------------------------------------------------------------------------
-   -- Dual Clocks
-   ---------------------------------------------------------------------------------------------
-
-   -- Put your dual-clock devices such as RAMs and ROMs here
-   --
-   -- Use the M2M framework's official RAM/ROM: dualport_2clk_ram
-   -- and make sure that the you configure the port that works with QNICE as a falling edge
-   -- by setting G_FALLING_A or G_FALLING_B (depending on which port you use) to true.
-
-   ---------------------------------------------------------------------------------------
-   -- Virtual drive handler
-   --
-   -- Only added for demo-purposes at this place, so that we can demonstrate the
-   -- firmware's ability to browse files and folders. It is very likely, that the
-   -- virtual drive handler needs to be placed somewhere else, for example inside
-   -- main.vhd. We advise to delete this before starting to port a core and re-adding
-   -- it later (and at the right place), if and when needed.
-   ---------------------------------------------------------------------------------------
-
-   -- @TODO:
-   -- a) In case that this is handled in main.vhd, you need to add the appropriate ports to i_main
-   -- b) You might want to change the drive led's color (just like the C64 core does) as long as
-   --    the cache is dirty (i.e. as long as the write process is not finished, yet)
-   main_drive_led_o     <= '0';
-   main_drive_led_col_o <= x"00FF00";  -- 24-bit RGB value for the led
-
-   i_vdrives : entity work.vdrives
+   
+   mount0_buf_ram : entity work.dualport_2clk_ram
       generic map (
-         VDNUM       => C_VDNUM
+         ADDR_WIDTH        => 18,
+         DATA_WIDTH        => 8,
+         FALLING_A         => true
       )
-      port map
-      (
-         clk_qnice_i       => qnice_clk_i,
-         clk_core_i        => main_clk,
-         reset_core_i      => main_reset_core_i,
-
-         -- Core clock domain
-         img_mounted_o     => open,
-         img_readonly_o    => open,
-         img_size_o        => open,
-         img_type_o        => open,
-         drive_mounted_o   => open,
-
-         -- Cache output signals: The dirty flags can be used to enforce data consistency
-         -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
-         -- The flushing flags can be used to signal the fact that the caches are currently
-         -- flushing to the user, for example using a special color/signal for example
-         -- at the drive led
-         cache_dirty_o     => open,
-         cache_flushing_o  => open,
-
-         -- QNICE clock domain
-         sd_lba_i          => (others => (others => '0')),
-         sd_blk_cnt_i      => (others => (others => '0')),
-         sd_rd_i           => (others => '0'),
-         sd_wr_i           => (others => '0'),
-         sd_ack_o          => open,
-
-         sd_buff_addr_o    => open,
-         sd_buff_dout_o    => open,
-         sd_buff_din_i     => (others => (others => '0')),
-         sd_buff_wr_o      => open,
-
-         -- QNICE interface (MMIO, 4k-segmented)
-         -- qnice_addr is 28-bit because we have a 16-bit window selector and a 4k window: 65536*4096 = 268.435.456 = 2^28
-         qnice_addr_i      => qnice_dev_addr_i,
-         qnice_data_i      => qnice_dev_data_i,
-         qnice_data_o      => qnice_demo_vd_data_o,
-         qnice_ce_i        => qnice_demo_vd_ce,
-         qnice_we_i        => qnice_demo_vd_we
-      ); -- i_vdrives
-
+      port map (
+         -- QNICE only
+         clock_a           => qnice_clk_i,
+         address_a         => qnice_dev_addr_i(17 downto 0),
+         data_a            => qnice_dev_data_i(7 downto 0),
+         wren_a            => qnice_apple_mount0_buf_ram_we,
+         q_a               => qnice_apple_mount0_buf_ram_data
+      ); -- mount_buf_ram
+      
+    
+    mount1_buf_ram : entity work.dualport_2clk_ram
+      generic map (
+         ADDR_WIDTH        => 18,
+         DATA_WIDTH        => 8,
+         FALLING_A         => true
+      ) 
+      port map (
+         -- QNICE only
+         clock_a           => qnice_clk_i,
+         address_a         => qnice_dev_addr_i(17 downto 0),
+         data_a            => qnice_dev_data_i(7 downto 0),
+         wren_a            => qnice_apple_mount1_buf_ram_we,
+         q_a               => qnice_apple_mount1_buf_ram_data
+      ); -- mount_buf_ram
+    
+    
+  
+   
+       
 end architecture synthesis;
 

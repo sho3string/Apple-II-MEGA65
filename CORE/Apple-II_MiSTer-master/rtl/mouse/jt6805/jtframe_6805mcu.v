@@ -142,7 +142,9 @@ always @(*) begin
     endcase
 end
 
-reg [7:0] intram[128];
+//reg [7:0] intram[128];
+reg [7:0] intram [0:127];
+
 always @(posedge clk) begin
     ram_dout <= intram[addr[6:0]];
     if (ram_we) intram[addr[6:0]] <= dout;

@@ -108,7 +108,7 @@ begin
 
 
 -- Left Channel Combo
-  m6522_left : work.via6522
+  m6522_left : entity work.via6522
     port map (
       clock       => clk_14M,
       rising      => VIA_CE_R,
@@ -171,7 +171,7 @@ begin
   O_AUDIO_L <= std_logic_vector(unsigned("00" & o_psg_al) + unsigned("00" & o_psg_bl) + unsigned("00" & o_psg_cl));
 
 -- Right Channel Combo
-  m6522_right : work.via6522
+  m6522_right : entity work.via6522
     port map (
       clock       => clk_14M,
       rising      => VIA_CE_R,

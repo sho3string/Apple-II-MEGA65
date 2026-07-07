@@ -52,7 +52,7 @@ type WHS_INDEX_TYPE is array (0 to WHS_MAX_PAGES - 1) of natural;
 type WHS_RECORD_TYPE is record
    page_count  : natural;
    page_start  : WHS_INDEX_TYPE;
-   page_length : WHS_INDEX_TYPE;
+   page_length : WHS_INDEX_TYPE; 
 end record;
 type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
@@ -76,25 +76,12 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-   "Name of the Demo Core Version 1.0\n" &
-   "MiSTer port done by Demo Author in 2022\n\n" &
-
-   -- We are not insisting. But it would be nice if you gave us credit for MiSTer2MEGA65 by leaving these lines in
-   "Powered by MiSTer2MEGA65 Version [WIP],\n" &
-   "done by sy2002 and MJoergen in 2022\n" &
-
-   "\n\nEdit config.vhd to modify welcome screen.\n\n" &
-   "You can for example show the keyboard map.\n" &
-   "Look at this example for the Demo core:\n\n\n" &
-
-   "    Key                Demo core\n" &
-   "    " & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_10 & CHR_LINE_1 & CHR_LINE_1 & "\n" &
-   "    Left Cursor        Paddle left\n" &
-   "    Right Cursor       Paddle right\n" &
-   "    Space              Start game\n" &
-   "    Help               Options menu\n\n\n" &
-
-   "\n\n    Press Space to continue.\n\n\n";
+    "\n Apple //e Core V1\n\n" &
+   " by Muse\n" &
+   " Powered by MiSTer2MEGA65 v2.0.1\n\n\n" &
+   " Press HELP\n" &
+   " to mount drives & configure.\n\n" &
+   "\n\n Press Space to continue.";
 
 constant HELP_1 : string :=
 
@@ -188,8 +175,8 @@ constant SEL_CFG_FILE      : std_logic_vector(15 downto 0) := x"0101";
 
 -- START YOUR CONFIGURATION BELOW THIS LINE
 
-constant DIR_START         : string := "/m2m";
-constant CFG_FILE          : string := "/m2m/m2mcfg";
+constant DIR_START         : string := "/appl2e";
+constant CFG_FILE          : string := "/apple2e/a2ecfg";
 
 --------------------------------------------------------------------------------------------------------------------
 -- General configuration settings: Reset, Pause, OSD behavior, Ascal, etc. (Selector 0x0110)
@@ -268,7 +255,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "M2M DEMO CORE V1.0";
+constant CORENAME          : string := "Apple //e V1.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -329,7 +316,7 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 35;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 27;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
@@ -337,20 +324,17 @@ constant OPTM_SIZE         : natural := 35;  -- amount of items including empty 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 23;
-constant OPTM_DY           : natural := 24;
+constant OPTM_DY           : natural := 18;
 
 constant OPTM_ITEMS        : string :=
-
-   " Demo Headline A\n"     &
+   " Apple //e core\n"      &
    "\n"                     &
-   " Item A.1\n"            &
-   " Item A.2\n"            &
-   " Item A.3\n"            &
-   " Item A.4\n"            &
+   " A:%s\n"                &
+   --" Drive Y:%s\n"        &
+   " B:%s\n"                &
    "\n"                     &
    " Demo Headline B\n"     &
    "\n"                     &
-
    " HDMI: %s\n"            &    -- HDMI submenu
    " HDMI Settings\n"       &
    "\n"                     &
@@ -363,13 +347,6 @@ constant OPTM_ITEMS        : string :=
    " 800x600 60 Hz\n"       &
    "\n"                     &
    " Back to main menu\n"   &
-
-   "\n"                     &
-   " Drives\n"              &
-   "\n"                     &
-   " Drive X:%s\n"          &
-   " Drive Y:%s\n"          &
-   " Drive Z:%s\n"          &
    "\n"                     &
    " Another Headline\n"    &
    "\n"                     &
@@ -384,14 +361,13 @@ constant OPTM_ITEMS        : string :=
 -- and be aware that you can only have a maximum of 254 groups (255 means "Close Menu");
 -- also make sure that your group numbers are monotonic increasing (e.g. 1, 2, 3, 4, ...)
 -- single-select items and therefore also drive mount items need to have unique identifiers
-constant OPTM_G_Demo_A     : integer := 1;
-constant OPTM_G_HDMI       : integer := 2;
-constant OPTM_G_Drive_X    : integer := 3;
-constant OPTM_G_Drive_Y    : integer := 4;
-constant OPTM_G_Drive_Z    : integer := 5;
-constant OPTM_G_CRT        : integer := 6;
-constant OPTM_G_Zoom       : integer := 7;
-constant OPTM_G_Audio      : integer := 8;
+constant OPTM_G_HDMI       : integer := 1;
+constant OPTM_G_Drive_A    : integer := 2;
+--constant OPTM_G_Drive_Y    : integer := 4;
+constant OPTM_G_Drive_B    : integer := 3;
+constant OPTM_G_CRT        : integer := 4;
+constant OPTM_G_Zoom       : integer := 5;
+constant OPTM_G_Audio      : integer := 6;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -399,45 +375,36 @@ type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC-
 -- define your menu groups: which menu items are belonging together to form a group?
 -- where are separator lines? which items should be selected by default?
 -- make sure that you have exactly the same amount of entries here than in OPTM_ITEMS and defined by OPTM_SIZE
-constant OPTM_GROUPS       : OPTM_GTYPE := ( OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Demo Headline A"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_Demo_A + OPTM_G_START,             -- Item A.1, cursor start position
-                                             OPTM_G_Demo_A + OPTM_G_STDSEL,            -- Item A.2, selected by default
-                                             OPTM_G_Demo_A,                            -- Item A.3
-                                             OPTM_G_Demo_A,                            -- Item A.4
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Demo Headline B"
-                                             OPTM_G_LINE,                              -- Line
-
-                                             OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "HDMI Settings"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_HDMI + OPTM_G_STDSEL,              -- 720p 50 Hz 16:9, selected by default
-                                             OPTM_G_HDMI,                              -- 720p 60 Hz 16:9
-                                             OPTM_G_HDMI,                              -- 576p 50 Hz 4:3
-                                             OPTM_G_HDMI,                              -- 576p 50 Hz 5:4
-                                             OPTM_G_HDMI,                              -- 640x480 60 Hz
-                                             OPTM_G_HDMI,                              -- 720x480 59.94 Hz
-                                             OPTM_G_HDMI,                              -- 600p 60 Hz
-                                             OPTM_G_LINE,                              -- open
-                                             OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- Close submenu / back to main menu
-                                                                                       -- HDMI submenu block: END
-
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Drives"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_Drive_X + OPTM_G_MOUNT_DRV,        -- Drive X
-                                             OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,        -- Drive Y
-                                             OPTM_G_Drive_Z + OPTM_G_MOUNT_DRV,        -- Drive Z
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_TEXT + OPTM_G_HEADLINE,            -- Headline "Another Headline"
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_CRT     + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-                                             OPTM_G_LINE,                              -- Line
-                                             OPTM_G_CLOSE                              -- Close Menu
-                                           );
+constant OPTM_GROUPS       : OPTM_GTYPE := ( 
+    OPTM_G_HEADLINE,                          -- Headline "Demo Headline A"
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_Drive_A + OPTM_G_MOUNT_DRV + OPTM_G_START,        -- Drive A
+    --OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,      -- HDD
+    OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,        -- Drive B
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_HEADLINE,                          -- Headline "Demo Headline B"
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
+    OPTM_G_HEADLINE,                          -- Headline "HDMI Settings"
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_HDMI + OPTM_G_STDSEL,              -- 720p 50 Hz 16:9, selected by default
+    OPTM_G_HDMI,                              -- 720p 60 Hz 16:9
+    OPTM_G_HDMI,                              -- 576p 50 Hz 4:3
+    OPTM_G_HDMI,                              -- 576p 50 Hz 5:4
+    OPTM_G_HDMI,                              -- 640x480 60 Hz
+    OPTM_G_HDMI,                              -- 720x480 59.94 Hz
+    OPTM_G_HDMI,                              -- 600p 60 Hz
+    OPTM_G_LINE,                              -- open
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- Close submenu / back to main menu
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_HEADLINE,                          -- Headline "Another Headline"
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CRT     + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
+    OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
+    OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE                              -- Close Menu
+);
 
 --------------------------------------------------------------------------------------------------------------------
 -- !!! CAUTION: M2M FRAMEWORK CODE !!! DO NOT TOUCH ANYTHING BELOW THIS LINE !!!

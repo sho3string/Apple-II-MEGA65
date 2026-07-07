@@ -405,7 +405,7 @@ begin
 			-- Tint is changing: display only black, gray, or white
 			case shift_reg(3 downto 2) is
 				when "11"        =>
-				
+
 					-- white
 					if COLOR_PALETTE = "00" then
 						r := WHITE_NTSC; g := WHITE_NTSC; b := WHITE_NTSC;
@@ -434,7 +434,7 @@ begin
 		
 		de_delayed <= de_delayed(16 downto 0) & last_hbl;
 	end if;
-end process pixel_generator;
+end process;
 
 VGA_VBL <= vbl_delayed;
 VGA_HBL <= de_delayed(9) and de_delayed(17);
