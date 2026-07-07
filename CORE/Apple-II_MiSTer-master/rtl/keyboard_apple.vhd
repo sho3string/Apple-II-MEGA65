@@ -117,7 +117,7 @@ begin
     elsif rising_edge(CLK_14M) then
       --if state = KEY_UP and code = CAPS_LOCK then
       -- no need to track KEY_UP since this is done internally on the Mega65
-        caplock <= mega65_caps;--not caplock;
+        caplock <= not mega65_caps;--not caplock;
       --end if;
     end if;
   end process;
