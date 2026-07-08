@@ -102,7 +102,7 @@ architecture synthesis of main is
     signal tape_adc_act   : std_logic;
     
     signal ram_addr       : std_logic_vector(17 downto 0);
-    signal ram_dout       : std_logic_vector(15 downto 0);
+    signal ram_dout       : std_logic_vector(15 downto 0) := (others => '0');
     signal ram_din        : std_logic_vector(7 downto 0);
     signal ram_we         : std_logic;
     signal ram_aux        : std_logic;
@@ -141,8 +141,8 @@ architecture synthesis of main is
     
     -- Apple II ram/auxilliary ram. Aux ram is utilised for the 80 column mode
     type ram_type is array (natural range <>) of std_logic_vector(7 downto 0);
-    signal ram0 : ram_type(0 to 196607);
-    signal ram1 : ram_type(0 to 65535);
+    signal ram0 : ram_type(0 to 196607) := (others => (others => '0'));
+    signal ram1 : ram_type(0 to 65535)  := (others => (others => '0'));
     
     signal adc_bus             : std_logic_vector(3 downto 0);
     
@@ -426,7 +426,7 @@ begin
         video_switch    => video_toggle,
         palette_switch  => palette_toggle,
         screen_mode     => "00", -- Color
-        text_color      => text_color,
+        text_color      => '0', -- text_color,
         color_palette   => "00", -- Original NTSC
         palmode         => '0', -- Disabled
         romswitch       => '1', -- bottom toggle switch on apple ii US/UK keyboard
@@ -603,7 +603,7 @@ begin
         ready        => disk_ready_sd_2,
         active       => d2_active_sd,
 
-        sd_buff_addr => sd_buff_addr(8 downto 0),
+        sd_buff_addr => sd_buff_addr,
         sd_buff_dout => sd_buff_dout,
         sd_buff_din  => sd_buff_din(1),
         sd_buff_wr   => sd_buff_wr,
