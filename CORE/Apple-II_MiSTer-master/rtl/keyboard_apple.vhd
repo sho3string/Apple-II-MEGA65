@@ -53,7 +53,7 @@ architecture rtl of keyboard_apple is
   constant CAPS_LOCK        : unsigned(7 downto 0) := X"58";
   constant WINDOWS          : unsigned(7 downto 0) := X"1F";
   constant ALT              : unsigned(7 downto 0) := X"11";
-  constant F2               : unsigned(7 downto 0) := X"06";
+  constant F13              : unsigned(7 downto 0) := X"06"; -- use mega65s F13 key as reset key
   constant F8               : unsigned(7 downto 0) := X"0A";
   constant F9               : unsigned(7 downto 0) := X"01";
 	
@@ -121,6 +121,8 @@ begin
       --end if;
     end if;
   end process;
+  
+  
 
   shift_ctrl : process (CLK_14M, reset)
   begin
@@ -142,7 +144,7 @@ begin
           open_apple <= '1';
         elsif code = ALT then
           closed_apple <= '1';
-        elsif code = F2 then
+        elsif code = F13 and ctrl = '1' then
 		    soft_reset <= '1';
           --reset_key <= '1';
 	    elsif code = F8 then
@@ -159,7 +161,7 @@ begin
           open_apple <= '0';
         elsif code = ALT then
           closed_apple <= '0';
-        elsif code = F2 then
+        elsif code = F13 then
           --reset_key <= '0';
 			 soft_reset <= '0';
 		elsif code = F8 then

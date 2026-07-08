@@ -112,7 +112,7 @@ signal prev_keyboard_n      : std_logic_vector(79 downto 0) := (others => '1');
 signal prev_keys            : std_logic_vector(50 downto 0) := (others => '1');
 signal shift_pressed        : std_logic := '0';
 
-type slv8_array is array (0 to 61) of std_logic_vector(7 downto 0);
+type slv8_array is array (0 to 62) of std_logic_vector(7 downto 0);
 
 -- Example key mappings for Apple IIe keys
 constant apple_keycode_esc         : std_logic_vector(7 downto 0) := x"76"; -- Escape ("esc" key)
@@ -177,6 +177,8 @@ constant apple_keycode_minus       : std_logic_vector(7 downto 0) := x"4e"; -- -
 constant apple_keycode_equal       : std_logic_vector(7 downto 0) := x"55"; -- =
 constant apple_keycode_closedapple : std_logic_vector(7 downto 0) := x"11"; -- closed apple
 constant apple_keycode_backslash   : std_logic_vector(7 downto 0) := x"0e"; -- \
+constant apple_keycode_reset       : std_logic_vector(7 downto 0) := x"06"; -- soft reset
+
 /*
 type keymap_array is array(0 to 79) of unsigned(7 downto 0);
 
@@ -233,7 +235,7 @@ constant m65_keys : integer_vector := (
     m65_tab,
     m65_comma,
     m65_dot,
-    m65_mega,
+    m65_mega, -- open apple
     m65_up_crsr,
     m65_vert_crsr,
     m65_left_crsr,
@@ -246,14 +248,15 @@ constant m65_keys : integer_vector := (
     m65_asterisk,
     m65_plus,
     m65_minus,
-    m65_restore,
+    m65_restore, -- closed apple
     m65_arrow_up,
-    m65_space
+    m65_space,
+    m65_f13 -- reset
 );
 
 constant ps2_codes : slv8_array := (
-    0 => apple_keycode_delete, -- delete, requires ext bit
-    1 => apple_keycode_return, -- enter
+    0 => apple_keycode_delete,
+    1 => apple_keycode_return,
     2 => apple_keycode_0,
     3 => apple_keycode_1,
     4 => apple_keycode_2,
@@ -313,7 +316,8 @@ constant ps2_codes : slv8_array := (
    58 => apple_keycode_equal,
    59 => apple_keycode_closedapple,
    60 => apple_keycode_backslash,
-   61 => apple_keycode_space
+   61 => apple_keycode_space,
+   62 => apple_keycode_reset
 );
 
 begin
@@ -332,7 +336,7 @@ begin
                 prev_keyboard_n <= (others => '1');
             else
 
-                for current_key_index in 0 to 61 loop
+                for current_key_index in ps2_codes'low to ps2_codes'high loop
                     if keyboard_n(m65_keys(current_key_index)) /= prev_keyboard_n(m65_keys(current_key_index)) then
                         prev_keyboard_n(m65_keys(current_key_index)) <= keyboard_n(m65_keys(current_key_index));
                         toggled := not toggle_bit;
