@@ -49,6 +49,25 @@ module floppy_track
 	output reg    busy
 );
 
+i_ila_floppy_track ila_floppy_track (
+    .clk(sd_clk),
+
+    .probe0(sd_buff_wr),                         // 1
+    .probe1(sd_ack),                             // 1
+    .probe2(sd_buff_addr),                       // 9
+    .probe3(sd_buff_dout),                       // 8
+    .probe4(rel_lba),                            // 4
+    .probe5({rel_lba[3:0], sd_buff_addr[8:0]}),  // 13 RAM write addr
+    .probe6(sd_rd),                              // 1
+    .probe7(busy),                               // 1
+    .probe8(ready),                              // 1
+    .probe9(lba),                                // 32
+    .probe10(track),                             // 6
+    .probe11(cur_track)                          // 6
+    
+);
+
+
 assign sd_lba = lba;
 
 reg  [31:0] lba;
@@ -60,7 +79,7 @@ reg old_change = 1'b0;
 reg saving = 1'b0;
 reg dirty = 1'b0;
 
-always @(negedge sd_clk) begin
+always @(posedge sd_clk) begin
 	//reg old_ack;
 	//reg [5:0] cur_track = 0;
 	//reg old_change;

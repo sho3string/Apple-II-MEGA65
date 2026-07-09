@@ -1,0 +1,33 @@
+// Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
+// --------------------------------------------------------------------------------
+// Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
+// Date        : Wed Jul  8 20:59:02 2026
+// Host        : shoestring-virtual-machine running 64-bit Ubuntu 22.04.4 LTS
+// Command     : write_verilog -force -mode synth_stub
+//               /mnt/hgfs/GitHub/Apple-II-MEGA65/CORE/CORE-R6.gen/sources_1/ip/hdd_sector_bram/hdd_sector_bram_stub.v
+// Design      : hdd_sector_bram
+// Purpose     : Stub declaration of top-level module interface
+// Device      : xc7a200tfbg484-2
+// --------------------------------------------------------------------------------
+
+// This empty module with port declaration file causes synthesis tools to infer a black box for IP.
+// The synthesis directives are for Synopsys Synplify support to prevent IO buffer insertion.
+// Please paste the declaration into a Verilog source file or add the file as an additional source.
+(* x_core_info = "blk_mem_gen_v8_4_5,Vivado 2022.2" *)
+module hdd_sector_bram(clka, ena, regcea, wea, addra, dina, douta, clkb, enb, web, 
+  addrb, dinb, doutb)
+/* synthesis syn_black_box black_box_pad_pin="clka,ena,regcea,wea[0:0],addra[8:0],dina[7:0],douta[7:0],clkb,enb,web[0:0],addrb[8:0],dinb[7:0],doutb[7:0]" */;
+  input clka;
+  input ena;
+  input regcea;
+  input [0:0]wea;
+  input [8:0]addra;
+  input [7:0]dina;
+  output [7:0]douta;
+  input clkb;
+  input enb;
+  input [0:0]web;
+  input [8:0]addrb;
+  input [7:0]dinb;
+  output [7:0]doutb;
+endmodule

@@ -102,6 +102,18 @@ end disk_ii;
 
 architecture rtl of disk_ii is
 
+   component ila_drive_ram
+   port (
+        clk    : in std_logic;
+        probe0 : in unsigned(12 downto 0); -- TRACK_ADDR / track_byte_addr
+        probe1 : in unsigned(7 downto 0);  -- TRACK_DO
+        probe2 : in unsigned(7 downto 0);  -- data_reg
+        probe3 : in std_logic;             -- DISK_ACTIVE
+        probe4 : in std_logic;             -- DISK_READY
+        probe5 : in unsigned(5 downto 0)   -- TRACK
+    );
+  end component;
+
   signal motor_phase : std_logic_vector(3 downto 0);
   signal drive_on : std_logic;
   signal drive_real_on : std_logic; -- 1 sec delay for turning off the drive
@@ -128,6 +140,18 @@ architecture rtl of disk_ii is
   signal write_protect_bits : unsigned(7 downto 0);
   
 begin
+
+  ila_drive_ram_i : ila_drive_ram
+  port map (
+    clk    => CLK_14M,
+    probe0 => track_byte_addr,
+    probe1 => TRACK1_DO,
+    probe2 => data_reg,
+    probe3 => D1_ACTIVE,
+    probe4 => DISK_READY(0),
+    probe5 => TRACK1
+  );
+  
 
   interpret_io : process (CLK_14M)
   begin
