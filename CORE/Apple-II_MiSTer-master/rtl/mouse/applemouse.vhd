@@ -232,7 +232,7 @@ begin
   mcu_pb_in(7) <= not pressed;
   mcu_pb_in(5 downto 4) <= "11";
 
-  -- 341-0270-C
+   -- 341-0270-C
   --rom_addr <= pia_pb_out(3 downto 1) & std_logic_vector(A)(7 downto 0);
   rom_addr <= pia_pb_out(3 downto 1) & std_logic_vector(A(7 downto 0)); -- first slcie then convert
   rom : entity work.applemouse_rom port map (

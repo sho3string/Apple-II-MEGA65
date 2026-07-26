@@ -51,6 +51,7 @@ architecture rtl of video_generator is
   signal video_rom_out : unsigned(7 downto 0);
   signal video_shiftreg : unsigned(7 downto 0);
   signal q_signal       : std_logic_vector(7 downto 0); -- Intermediate signal
+
   
   signal video_rom_input_addr: std_logic_vector(12 downto 0);
 begin
@@ -62,10 +63,10 @@ begin
   -- Chapter 8 of Understanding the Apple II by Jim Sather
   --
   -----------------------------------------------------------------------------
-
+  
   -- Convert q_signal to unsigned
   video_rom_out <= unsigned(q_signal);
-  
+
   video_rom_addr <= GR2 &
                     (DL(7) or (not GR2 and DL(6) and FLASH_CLK and not ALTCHAR)) &
                     (DL(6) and (ALTCHAR or GR2 or DL(7))) &
@@ -73,7 +74,7 @@ begin
 
   video_rom_input_addr<=std_logic_vector(ROMSWITCH & video_rom_addr) when ioctl_wr ='0' else ioctl_addr(12 downto 0);
 
-  /*videorom : entity work.spram
+   /*videorom : entity work.spram
   generic map (13,8,"rtl/roms/video2.mif")
   port map (
    address => video_rom_input_addr,

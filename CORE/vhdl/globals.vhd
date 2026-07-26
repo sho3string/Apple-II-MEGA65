@@ -84,7 +84,7 @@ constant C_HMAP_M2M           : std_logic_vector(15 downto 0) := x"0000";     --
 -- the file- and directory browsing capabilities of the firmware
 constant C_DEV_APPLE_VDRIVES   : std_logic_vector(15 downto 0) := x"0100"; -- virtual device management system
 constant C_DEV_APPLE_MOUNT0    : std_logic_vector(15 downto 0) := x"0101"; -- ram 0 to buffer dsk images
-constant C_DEV_APPLE_MOUNT1    : std_logic_vector(15 downto 0) := x"0102"; -- ram 1 to buffer hd images
+--constant C_DEV_APPLE_MOUNT1    : std_logic_vector(15 downto 0) := x"0102"; -- ram 1 to buffer hd images
 --constant C_DEV_APPLE_MOUNT2    : std_logic_vector(15 downto 0) := x"0103"; -- ram 2 to buffer dsk images
 
 -- Virtual drive management system (handled by vdrives.vhd and the firmware)
@@ -95,10 +95,10 @@ constant C_DEV_APPLE_MOUNT1    : std_logic_vector(15 downto 0) := x"0102"; -- ra
 -- Otherwise make sure that you wire C_VD_DEVICE in the qnice_ramrom_devices process and that you
 -- have as many appropriately sized RAM buffers for disk images as you have drives
 type vd_buf_array is array(natural range <>) of std_logic_vector;
-constant C_VDNUM              : natural := 2;                                          -- amount of virtual drives; maximum is 15
+constant C_VDNUM              : natural := 1;                                          -- amount of virtual drives; maximum is 15
 constant C_VD_DEVICE          : std_logic_vector(15 downto 0) := C_DEV_APPLE_VDRIVES;  -- device number of vdrives.vhd device
 constant C_VD_BUFFER          : vd_buf_array := (  C_DEV_APPLE_MOUNT0,
-                                                   C_DEV_APPLE_MOUNT1,
+                                                   --C_DEV_APPLE_MOUNT1,
                                                    --C_DEV_APPLE_MOUNT2,
                                                    x"EEEE");                           -- Always finish the array using x"EEEE"
 

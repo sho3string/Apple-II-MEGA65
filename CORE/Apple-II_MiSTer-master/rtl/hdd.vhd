@@ -1,6 +1,24 @@
-
--- HDD interface (ProDOS)
-
+-------------------------------------------------------------------------------
+--
+-- HDD interface
+--
+-- This is a ProDOS HDD interface based on the AppleWin interface.
+-- Currently, the CPU must be halted during command execution.
+--
+-- Steven A. Wilson
+--
+-------------------------------------------------------------------------------
+-- Registers (per AppleWin source/Harddisk.cpp)
+-- C0F0         (r)   EXECUTE AND RETURN STATUS
+-- C0F1         (r)   STATUS (or ERROR)
+-- C0F2         (r/w) COMMAND
+-- C0F3         (r/w) UNIT NUMBER
+-- C0F4         (r/w) LOW BYTE OF MEMORY BUFFER
+-- C0F5         (r/w) HIGH BYTE OF MEMORY BUFFER
+-- C0F6         (r/w) LOW BYTE OF BLOCK NUMBER
+-- C0F7         (r/w) HIGH BYTE OF BLOCK NUMBER
+-- C0F8         (r)   NEXT BYTE
+-------------------------------------------------------------------------------
 
 library ieee;
 use ieee.std_logic_1164.all;

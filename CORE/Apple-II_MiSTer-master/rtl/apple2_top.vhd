@@ -189,7 +189,7 @@ architecture arch of apple2_top is
   signal IO_STROBE : std_logic;
 
   --temporary signal
-  signal ADDR_as_slv : std_logic_vector(15 downto 0);
+  signal ADDR_as_slv : std_logic_vector(15 downto 0); 
   signal ADDR : unsigned(15 downto 0);
   signal D, PD: unsigned(7 downto 0);
   signal DISK_DO, HDD_DO : unsigned(7 downto 0);
@@ -244,44 +244,10 @@ architecture arch of apple2_top is
   signal pdl_strobe : std_logic;
   signal open_apple : std_logic;
   signal closed_apple : std_logic;
-  
-  
-  component ila_apple2_diskbus
-  port (
-    clk     : in std_logic;
-    probe0  : in unsigned(15 downto 0); -- ADDR
-    probe1  : in unsigned(7 downto 0);  -- DISK_DO
-    probe2  : in unsigned(7 downto 0);  -- PD
-    probe3 
-      : in unsigned(7 downto 0);  -- D
-    probe4  : in std_logic;             -- cpu_we
-    probe5  : in std_logic;             -- IO_SELECT(6)
-    probe6  : in std_logic;             -- DEVICE_SELECT(6)
-    probe7  : in std_logic;             -- PHASE_ZERO
-    probe8  : in std_logic;             -- CLK_2M
-    probe9  : in unsigned(7 downto 0)   -- TRACK1_DO
-  );
-  end component;
-  
 begin
 
-  ila_apple2_diskbus_i : ila_apple2_diskbus
-  port map (
-    clk     => CLK_14M,
-    probe0  => ADDR,
-    probe1  => DISK_DO,
-    probe2  => PD,
-    probe3  => D,
-    probe4  => cpu_we,
-    probe5  => IO_SELECT(6),
-    probe6  => DEVICE_SELECT(6),
-    probe7  => PHASE_ZERO,
-    probe8  => CLK_2M,
-    probe9  => TRACK1_DO
-    
-  );
 
-  -- Convert ADDR to std_logic_vector before use
+ -- Convert ADDR to std_logic_vector before use
   ADDR_as_slv <= std_logic_vector(ADDR);
   -- In the Apple ][, this was a 555 timer
   power_on : process(CLK_14M)
@@ -301,7 +267,7 @@ begin
       end if;
     end if;
   end process;		
-  
+		
   
   -- Paddle buttons
   -- GAMEPORT input bits:
@@ -437,7 +403,7 @@ begin
     PS2_Key  => PS2_Key,
     mega65_caps => mega65_caps,
     CLK_14M  => CLK_14M,
-	reset    => reset_cold, -- use reset_cold, not reset so we keep the
+	 reset    => reset_cold, -- use reset_cold, not reset so we keep the
 	                         -- keyboard state machine running for key up 
 									 -- events during / after reset
     reads    => read_key,
@@ -451,9 +417,7 @@ begin
     );
 
 	 
-  --DISK_ACT <= not (D1_ACTIVE or D2_ACTIVE);
-  
-  DISK_ACT <= (D1_ACTIVE or D2_ACTIVE);
+  DISK_ACT <= D1_ACTIVE or D2_ACTIVE;
 
   disk : entity work.disk_ii port map (
     CLK_14M        => CLK_14M,
@@ -538,7 +502,8 @@ begin
       I_RESET_L => not reset,
       I_ENA_H   => mb_5_inslot,
 
-      I_ADDR    => ADDR_as_slv(7 downto 0),
+      --I_ADDR    => std_logic_vector(ADDR)(7 downto 0),
+      I_ADDR => ADDR_as_slv(7 downto 0),
       I_DATA    => std_logic_vector(D),
       unsigned(O_DATA) => PSG_5_DO,
       I_RW_L    => not cpu_we,

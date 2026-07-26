@@ -125,8 +125,8 @@ architecture rtl of apple2 is
   signal we : std_logic;
 
   -- Main ROM signals
-  signal rom_out : unsigned(7 downto 0);
   signal q_signal : std_logic_vector(7 downto 0); -- Intermediate signal
+  signal rom_out : unsigned(7 downto 0);
   signal rom_addr : unsigned(13 downto 0);
 
   -- Address decoder signals
@@ -173,6 +173,8 @@ architecture rtl of apple2 is
 
   
   signal video_rom_select : std_logic;
+ 
+    
 begin
 
   rom_out <= unsigned(q_signal);
@@ -543,6 +545,7 @@ begin
         addr => R65C02_A,
         nwe => R65C02_WE_N
     );
+    
 
   -- Original Apple had asynchronous ROMs.  We use a synchronous ROM
   -- that needs its address earlier, hence the odd clock.

@@ -405,7 +405,7 @@ begin
 			-- Tint is changing: display only black, gray, or white
 			case shift_reg(3 downto 2) is
 				when "11"        =>
-
+				
 					-- white
 					if COLOR_PALETTE = "00" then
 						r := WHITE_NTSC; g := WHITE_NTSC; b := WHITE_NTSC;

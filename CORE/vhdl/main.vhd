@@ -134,8 +134,6 @@ architecture synthesis of main is
     signal sd_wr          : vd_std_array(G_VDNUM - 1 downto 0);
     signal sd_blk_cnt     : vd_vec_array(G_VDNUM - 1 downto 0)(5 downto 0);
 
-    signal drives_reset   : std_logic_vector(G_VDNUM - 1 downto 0);
-    signal sd_drives_reset: std_logic_vector(G_VDNUM - 1 downto 0);
     signal vdrives_mounted: std_logic_vector(G_VDNUM - 1 downto 0);
     signal cache_dirty    : std_logic_vector(G_VDNUM - 1 downto 0);
     
@@ -152,17 +150,19 @@ architecture synthesis of main is
     signal TRACK1_RAM_DO       : unsigned(7 downto 0);
     signal TRACK1_RAM_WE       : std_logic;
     signal TRACK1              : unsigned(5 downto 0);
-    
-    signal TRACK2_RAM_BUSY     : std_logic;
+    signal TRACK1_RAM_BUSY     : std_logic;
+   
     signal TRACK2_RAM_ADDR     : unsigned(12 downto 0);
     signal TRACK2_RAM_DI       : unsigned(7 downto 0);
     signal TRACK2_RAM_DO       : unsigned(7 downto 0);
     signal TRACK2_RAM_WE       : std_logic;
     signal TRACK2              : unsigned(5 downto 0);
+    signal TRACK2_RAM_BUSY     : std_logic;
     
+    signal DISK_READY          : std_logic_vector(1 downto 0);
     signal DISK_CHANGE         : std_logic_vector(1 downto 0);
-    --signal disk_mount          : std_logic_vector(1 downto 0) := (others => '0');
-    
+    signal disk_mount          : std_logic_vector(1 downto 0);
+
     signal dd_reset            : std_logic := reset_soft_i or reset_hard_i;
     signal reset_core          : std_logic := '0';
     
@@ -190,28 +190,6 @@ architecture synthesis of main is
     
     constant m65_capslock      : integer := 72;
     
-    signal track1_sd           : std_logic_vector(5 downto 0);
-    signal d1_active_sd        : std_logic;
-    signal mount1_sd           : std_logic;
-    signal change1_sd          : std_logic;
-    
-    signal track2_sd           : std_logic_vector(5 downto 0);
-    signal d2_active_sd        : std_logic;
-    signal mount2_sd           : std_logic;
-    signal change2_sd          : std_logic;
-    
-    signal disk_ready_sd_1     : std_logic;
-    signal disk_ready_sd_2     : std_logic;
-    signal busy_sd_1           : std_logic;
-    signal busy_sd_2           : std_logic;
-    
-    signal disk_ready_core_1   : std_logic;
-    signal disk_ready_core_2   : std_logic;
-    signal busy_core_1         : std_logic;
-    signal busy_core_2         : std_logic;
-    signal DISK_READY_C        : std_logic_vector(1 downto 0);
-    
-    
     
     function reverse_vd_vec_array(arr : vd_vec_array) return vd_vec_array is
         variable result : vd_vec_array(arr'RANGE)(arr'element'RANGE);
@@ -231,9 +209,6 @@ begin
    audio_left_o(14 downto 0) <= signed(padded_l(14 downto 0));
    audio_right_o(15) <= not padded_r(15);
    audio_right_o(14 downto 0) <= signed(padded_l(14 downto 0));
-   
-   DISK_READY_C(0) <= disk_ready_core_1;
-   DISK_READY_C(1) <= disk_ready_core_2; -- (or the synced drive2 later)
 
    process(apple_qnice_clk_i)
     begin
@@ -274,99 +249,21 @@ begin
             end if;
         end if;
     end process;
-    
-    -- single-bit controls (pack them to save instances)
-    i_cdc_ctrl1 : xpm_cdc_array_single
-    generic map ( WIDTH => 3 )
-      port map (
-        src_clk  => clk_main_i,
-        src_in(0)=> D1_ACTIVE,
-        src_in(1)=> vdrives_mounted(0),
-        src_in(2)=> DISK_CHANGE(0),
-        dest_clk => apple_qnice_clk_i,
-        dest_out(0)=> d1_active_sd,
-        dest_out(1)=> mount1_sd,
-        dest_out(2)=> change1_sd
-    );
-    
-    i_cdc_status1 : xpm_cdc_array_single
-    generic map ( WIDTH => 2 )
-      port map (
-        src_clk     => apple_qnice_clk_i,  -- sd_clk domain
-        src_in(0)   => disk_ready_sd_1,
-        src_in(1)   => busy_sd_1,
-    
-        dest_clk    => clk_main_i,         -- Apple core domain
-        dest_out(0) => disk_ready_core_1,
-        dest_out(1) => busy_core_1
-    );
-   
   
-   -- single-bit controls (pack them to save instances)
-    i_cdc_ctrl2 : xpm_cdc_array_single
-    generic map ( WIDTH => 3 )
-      port map (
-        src_clk  => clk_main_i,
-        src_in(0)=> D2_ACTIVE,
-        src_in(1)=> vdrives_mounted(1),
-        src_in(2)=> DISK_CHANGE(1),
-        dest_clk => apple_qnice_clk_i,
-        dest_out(0)=> d2_active_sd,
-        dest_out(1)=> mount2_sd,
-        dest_out(2)=> change2_sd
-    );
-    
-    i_cdc_status2 : xpm_cdc_array_single
-    generic map ( WIDTH => 2 )
-      port map (
-        src_clk     => apple_qnice_clk_i,  -- sd_clk domain
-        src_in(0)   => disk_ready_sd_2,
-        src_in(1)   => busy_sd_2,
-    
-        dest_clk    => clk_main_i,         -- Apple core domain
-        dest_out(0) => disk_ready_core_2,
-        dest_out(1) => busy_core_2
-    );
-   
-   i_cdc_drive : xpm_cdc_array_single
-   generic map (
-      WIDTH => G_VDNUM
-   )
-   port map (
-      src_clk    => clk_main_i,
-      src_in     => drives_reset,
-
-      dest_clk   => apple_qnice_clk_i,
-      dest_out   => sd_drives_reset
-   );
-   
-   
-   combined_reset_proc : process (all)
-   begin
-      reset_core <= '0';
-      if dd_reset = '1' then
-         reset_core <= '1';
-      end if;
-   end process combined_reset_proc;  
-   
-   
-   drv_reset_gen : for i in 0 to G_VDNUM - 1 generate
-      drives_reset(i) <= (reset_core) or (not vdrives_mounted(i));
-   end generate drv_reset_gen;
-   
-    
-    drive1 : process(clk_main_i)
+ 
+    -- drive 1
+    drive1 : process(clk_main_i) -- try clock main
     begin
         if rising_edge(clk_main_i) then
-            if reset_core = '1' then
-              DISK_CHANGE(0) <= '0';
-            elsif img_mounted(0) = '1' then
-              DISK_CHANGE(0) <= not DISK_CHANGE(0);
+            if img_mounted(0) = '1' then
+                disk_mount(0) <= '1' when (unsigned(img_size) /= 0) else '0';
+                DISK_CHANGE(0) <= not DISK_CHANGE(0);
+                -- disk_protect <= img_readonly;
             end if;
         end if;
     end process;
     
-    
+    /*
     drive2 : process(clk_main_i)
     begin
       if rising_edge(clk_main_i) then
@@ -377,7 +274,7 @@ begin
             end if;
         end if;
     end process;
-   
+   */
    
   
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
@@ -444,16 +341,16 @@ begin
 	    TRACK1_DI       => TRACK1_RAM_DI,
 	    TRACK1_DO       => TRACK1_RAM_DO,
 	    TRACK1_WE       => TRACK1_RAM_WE,
-	    TRACK1_BUSY     => busy_core_1,
+	    TRACK1_BUSY     => TRACK1_RAM_BUSY,
 	    -- Track buffer interface disk 2
 	    TRACK2          => TRACK2,
 	    TRACK2_ADDR     => TRACK2_RAM_ADDR,
 	    TRACK2_DI       => TRACK2_RAM_DI,
 	    TRACK2_DO       => TRACK2_RAM_DO,
 	    TRACK2_WE       => TRACK2_RAM_WE,
-	    TRACK2_BUSY     => busy_core_2,
+	    TRACK2_BUSY     => TRACK2_RAM_BUSY,
 	    
-	    DISK_READY      => DISK_READY_C,
+	    DISK_READY      => DISK_READY,
 	    D1_ACTIVE       => D1_ACTIVE,
 	    D2_ACTIVE       => D2_ACTIVE,
 	    DISK_ACT        => drive_led_o,
@@ -466,11 +363,11 @@ begin
 	    HDD_WRITE       => hdd_write,
 	    HDD_MOUNTED     => hdd_mounted,
 	    HDD_PROTECT     => hdd_protect,
-	    HDD_RAM_ADDR    => unsigned(sd_buff_addr(8 downto 0)),
+	    HDD_RAM_ADDR    => unsigned(sd_buff_addr),
 	    HDD_RAM_DI      => unsigned(sd_buff_dout),
 	    HDD_RAM_DO      => sd_buff_din_unsigned,
 	    
-	    HDD_RAM_WE      => sd_buff_wr and sd_ack(1),
+	    HDD_RAM_WE      => '0',--sd_buff_wr and sd_ack(1),
 	    
 	    ram_addr        => ram_addr,
         ram_do          => ram_dout,
@@ -534,15 +431,15 @@ begin
          cache_flushing_o  => open,
 
          -- QNICE clock domain
-         sd_lba_i          => reverse_vd_vec_array(sd_lba),
-         sd_blk_cnt_i      => reverse_vd_vec_array(sd_blk_cnt),
+         sd_lba_i          => sd_lba,
+         sd_blk_cnt_i      => sd_blk_cnt,
          sd_rd_i           => sd_rd,
          sd_wr_i           => sd_wr,
          sd_ack_o          => sd_ack,
 
          sd_buff_addr_o    => sd_buff_addr,
          sd_buff_dout_o    => sd_buff_dout,
-         sd_buff_din_i     => reverse_vd_vec_array(sd_buff_din),
+         sd_buff_din_i     => sd_buff_din,
          sd_buff_wr_o      => sd_buff_wr,
 
          -- QNICE interface (MMIO, 4k-segmented)
@@ -553,25 +450,25 @@ begin
          qnice_ce_i        => apple_qnice_ce_i,
          qnice_we_i        => apple_qnice_we_i
       ); -- i_vdrives
+      
    
    -- to do
    i_floppy_track_1 : entity work.floppy_track
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
-        sd_clk       => apple_qnice_clk_i,
-        reset        => sd_drives_reset(0),
+        reset        => dd_reset,
         ram_addr     => TRACK1_RAM_ADDR,
         ram_di       => TRACK1_RAM_DI,
         ram_do       => TRACK1_RAM_DO,
         ram_we       => TRACK1_RAM_WE,
         
-        track        => unsigned(track1_sd),
-        busy         => busy_sd_1,
-        change       => change1_sd,
-        mount        => mount1_sd,
-        ready        => disk_ready_sd_1,
-        active       => d1_active_sd,
+        track        => TRACK1,
+        busy         => TRACK1_RAM_BUSY,
+        change       => DISK_CHANGE(0),
+        mount        => disk_mount(0),
+        ready        => DISK_READY(0),
+        active       => D1_ACTIVE,
 
         sd_buff_addr => sd_buff_addr,
         sd_buff_dout => sd_buff_dout,
@@ -584,7 +481,7 @@ begin
         sd_ack       => sd_ack(0)	
    );
    
-   
+   /*
    i_floppy_track_2 : entity work.floppy_track
     port map (
         
@@ -612,7 +509,7 @@ begin
         sd_rd        => sd_rd(1),--sd_rd(2),
         sd_wr        => sd_wr(1),--sd_wr(2),
         sd_ack       => sd_ack(1)--sd_ack(2)	
-   );
+   );*/
    
    
    -- to do

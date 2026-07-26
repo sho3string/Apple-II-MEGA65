@@ -23,7 +23,6 @@
 module floppy_track
 (
 	input         clk,
-	input         sd_clk,
 	input         reset,
 
 	output [31:0] sd_lba,
@@ -49,42 +48,17 @@ module floppy_track
 	output reg    busy
 );
 
-i_ila_floppy_track ila_floppy_track (
-    .clk(sd_clk),
-
-    .probe0(sd_buff_wr),                         // 1
-    .probe1(sd_ack),                             // 1
-    .probe2(sd_buff_addr),                       // 9
-    .probe3(sd_buff_dout),                       // 8
-    .probe4(rel_lba),                            // 4
-    .probe5({rel_lba[3:0], sd_buff_addr[8:0]}),  // 13 RAM write addr
-    .probe6(sd_rd),                              // 1
-    .probe7(busy),                               // 1
-    .probe8(ready),                              // 1
-    .probe9(lba),                                // 32
-    .probe10(track),                             // 6
-    .probe11(cur_track)                          // 6
-    
-);
-
-
 assign sd_lba = lba;
 
 reg  [31:0] lba;
 reg   [3:0] rel_lba;
 
-reg old_ack = 1'b0;
-reg [5:0] cur_track = 6'd0;
-reg old_change = 1'b0;
-reg saving = 1'b0;
-reg dirty = 1'b0;
-
-always @(posedge sd_clk) begin
-	//reg old_ack;
-	//reg [5:0] cur_track = 0;
-	//reg old_change;
-	//reg saving = 0;
-	//reg dirty = 0;
+always @(posedge clk) begin
+	reg old_ack;
+	reg [5:0] cur_track = 0;
+	reg old_change;
+	reg saving = 0;
+	reg dirty = 0;
 
 	old_change <= change;
 	old_ack <= sd_ack;
@@ -157,8 +131,9 @@ always @(posedge sd_clk) begin
 		end
 end
 
+/*
 
-/*dpram #(13,8) floppy_dpram
+dpram #(13,8) floppy_dpram
 (
         .clock_a(clk),
         .address_a({rel_lba, sd_buff_addr}),
@@ -172,25 +147,29 @@ end
         .data_b(ram_di),
         .q_b(ram_do)
 
-);*/
-
-dualport_2clk_ram #(
-    .ADDR_WIDTH(13),
-    .DATA_WIDTH(8),
-    .FALLING_A(1'b1)
-) floppy_dpram (
-    .clock_a(sd_clk),
-    .address_a({rel_lba[3:0], sd_buff_addr[8:0]}),
-    .wren_a(sd_buff_wr & sd_ack),
-    .data_a(sd_buff_dout),
-    .q_a(sd_buff_din),
-
-    .clock_b(clk),
-    .address_b(ram_addr),
-    .wren_b(ram_we),
-    .data_b(ram_di),
-    .q_b(ram_do)
 );
+
+
+*/
+dualport_2clk_ram #(
+        .ADDR_WIDTH (13),
+        .DATA_WIDTH (8)
+    ) floppy_dpram (
+        .clock_a         (clk),
+        .address_a       ({rel_lba, sd_buff_addr}),
+        .do_latch_addr_a (1'b0),
+        .data_a          (sd_buff_dout),
+        .wren_a          (sd_buff_wr && sd_ack),
+        .q_a             (sd_buff_din),
+
+        .clock_b         (clk),
+        .address_b       (ram_addr),
+        .do_latch_addr_b (1'b0),
+        .data_b          (ram_di),
+        .wren_b          (ram_we),
+        .q_b             (ram_do)
+    );
+
 
 /*
 // Dual port track buffer

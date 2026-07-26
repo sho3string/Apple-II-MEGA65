@@ -258,21 +258,18 @@ wire [7:0] DOA_CS;
 wire [7:0] ROM_ADDR = ADDRESS[7:0];
 assign DATA_OUT = ~IO_SELECT_N ? DOA_CS :  CLK_IN;
 
-    /*
+/*
    rom #(8,8,"rtl/roms/clock.hex") roms (
            .clock(CLK_14M),
            .ce(1'b1),
            .a(ROM_ADDR),
            .data_out(DOA_CS)
-   );*/
-   /*rom #(8,8,"rtl/roms/clock.hex") roms (
-           .clock(CLK_14M),
-           .ce(1'b1),
-           .a(ROM_ADDR),
-           .data_out(DOA_CS)
-   );*/
+   );
    
-   dualport_2clk_ram #(
+*/
+
+
+dualport_2clk_ram #(
         .ADDR_WIDTH(8),
         .DATA_WIDTH(8),
         .ROM_PRELOAD(1),
@@ -285,5 +282,6 @@ assign DATA_OUT = ~IO_SELECT_N ? DOA_CS :  CLK_IN;
         .address_a(ROM_ADDR),
         .q_a(DOA_CS)
     );
-   
+    
    endmodule
+
