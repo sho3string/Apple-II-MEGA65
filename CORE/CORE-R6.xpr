@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/mnt/hgfs/GitHub/Apple-II-MEGA65/CORE/CORE-R6.xpr">
+<Project Version="7" Minor="61" Path="/mnt/hgfs/GitHub/Apple-IIe-MEGA65/CORE/CORE-R6.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="926450cd97ce43fe9c0a128c0d719455"/>
@@ -88,15 +88,19 @@
   <FileSets Version="1" Minor="31">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/6551rx.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/ssc/6551rx.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/6551rx.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/6551tx.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/ssc/6551tx.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/6551tx.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -109,50 +113,64 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/jt6805.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/6805_param.vh">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/6805_param.vh">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/6805_param.vh"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
           <Attr Name="IsVisible" Val="1"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_alu.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/jt6805_alu.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_alu.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/6805.vh">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/6805.vh">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/6805.vh"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
           <Attr Name="IsVisible" Val="1"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_ctrl.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/jt6805_ctrl.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_ctrl.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_regs.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/jt6805_regs.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jt6805_regs.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jtframe_6805mcu.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/jt6805/jtframe_6805mcu.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/jt6805/jtframe_6805mcu.v"/>
+          <Attr Name="ImportTime" Val="1785046789"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -165,15 +183,19 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/super_serial_card.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/ssc/super_serial_card.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/super_serial_card.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/uart_6551.v">
+      <File Path="$PSRCDIR/sources_1/imports/rtl/ssc/uart_6551.v">
         <FileInfo>
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/uart_6551.v"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -242,90 +264,6 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_Pack.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_MCode.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_ALU.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/pia6821.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse_rom.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse_mcu_rom.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/drive_ii.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/disk_ii_rom.vhd">
-        <FileInfo SFType="VHDL2008">
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/disk_ii.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mockingboard/via6522.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mockingboard/mockingboard.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/ssc_rom.vhd">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
       <File Path="$PPRDIR/../M2M/vhdl/tdp_ram.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
@@ -352,6 +290,38 @@
       </File>
       <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/R65Cx2.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/t65/T65_Pack.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_Pack.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/t65/T65_MCode.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_MCode.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/t65/T65_ALU.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65_ALU.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/t65/T65.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/t65/T65.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -428,7 +398,25 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/keyboard_apple.vhd">
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/apple_keyboard.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/drive_ii.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/disk_ii_rom.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/disk_ii.vhd">
         <FileInfo SFType="VHDL2008">
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
@@ -442,6 +430,50 @@
       </File>
       <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/hdd.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mockingboard/via6522.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/mockingboard/mockingboard.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/pia6821.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/pia6821.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/applemouse_rom.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse_rom.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/applemouse_mcu_rom.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse_mcu_rom.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/mouse/applemouse.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/mouse/applemouse.vhd"/>
+          <Attr Name="ImportTime" Val="1785046998"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -854,8 +886,10 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PPRDIR/vhdl/keyboard_adapter.vhd">
+      <File Path="$PSRCDIR/sources_1/imports/vhdl/keyboard_adapter.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/vhdl/keyboard_adapter.vhd"/>
+          <Attr Name="ImportTime" Val="1783485165"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -886,6 +920,14 @@
       </File>
       <File Path="$PPRDIR/../M2M/QNICE/vhdl/sd_spi.vhd">
         <FileInfo SFType="VHDL2008">
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PSRCDIR/sources_1/imports/rtl/ssc/ssc_rom.vhd">
+        <FileInfo SFType="VHDL2008">
+          <Attr Name="ImportPath" Val="$PPRDIR/Apple-II_MiSTer-master/rtl/ssc/ssc_rom.vhd"/>
+          <Attr Name="ImportTime" Val="1785043621"/>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
@@ -969,19 +1011,6 @@
         <Option Name="UseBlackboxStub" Val="1"/>
       </Config>
     </FileSet>
-    <FileSet Name="i_ila_floppy_track" Type="BlockSrcs" RelSrcDir="$PSRCDIR/i_ila_floppy_track" RelGenDir="$PGENDIR/i_ila_floppy_track">
-      <File Path="$PSRCDIR/sources_1/ip/i_ila_floppy_track/i_ila_floppy_track.xci">
-        <FileInfo>
-          <Attr Name="UsedIn" Val="synthesis"/>
-          <Attr Name="UsedIn" Val="implementation"/>
-          <Attr Name="UsedIn" Val="simulation"/>
-        </FileInfo>
-      </File>
-      <Config>
-        <Option Name="TopModule" Val="i_ila_floppy_track"/>
-        <Option Name="UseBlackboxStub" Val="1"/>
-      </Config>
-    </FileSet>
   </FileSets>
   <Simulators>
     <Simulator Name="XSim">
@@ -1029,18 +1058,6 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="i_ila_floppy_track_synth_1" Type="Ft3:Synth" SrcSet="i_ila_floppy_track" Part="xc7a200tfbg484-2" ConstrsSet="i_ila_floppy_track" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/i_ila_floppy_track_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_ila_floppy_track_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/i_ila_floppy_track_synth_1">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022">
-          <Desc>Vivado Synthesis Defaults</Desc>
-        </StratHandle>
-        <Step Id="synth_design"/>
-      </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
-      <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
     <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7a200tfbg484-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2019"/>
@@ -1060,25 +1077,6 @@
       <RQSFiles/>
     </Run>
     <Run Id="hdd_sector_bram_impl_1" Type="Ft2:EntireDesign" Part="xc7a200tfbg484-2" ConstrsSet="hdd_sector_bram" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="hdd_sector_bram_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_impl_1">
-      <Strategy Version="1" Minor="2">
-        <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
-          <Desc>Default settings for Implementation.</Desc>
-        </StratHandle>
-        <Step Id="init_design"/>
-        <Step Id="opt_design"/>
-        <Step Id="power_opt_design"/>
-        <Step Id="place_design"/>
-        <Step Id="post_place_power_opt_design"/>
-        <Step Id="phys_opt_design"/>
-        <Step Id="route_design"/>
-        <Step Id="post_route_phys_opt_design"/>
-        <Step Id="write_bitstream"/>
-      </Strategy>
-      <ReportStrategy Name="Vivado Implementation Default Reports" Flow="Vivado Implementation 2022"/>
-      <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
-      <RQSFiles/>
-    </Run>
-    <Run Id="i_ila_floppy_track_impl_1" Type="Ft2:EntireDesign" Part="xc7a200tfbg484-2" ConstrsSet="i_ila_floppy_track" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" SynthRun="i_ila_floppy_track_synth_1" IncludeInArchive="false" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/i_ila_floppy_track_impl_1" AutoRQSDir="$PSRCDIR/utils_1/imports/i_ila_floppy_track_impl_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2022">
           <Desc>Default settings for Implementation.</Desc>
