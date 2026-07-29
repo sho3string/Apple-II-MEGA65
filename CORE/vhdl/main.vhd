@@ -136,6 +136,7 @@ architecture synthesis of main is
 
     signal vdrives_mounted: std_logic_vector(G_VDNUM - 1 downto 0);
     signal cache_dirty    : std_logic_vector(G_VDNUM - 1 downto 0);
+    signal prevent_reset  : std_logic;
     
     -- Apple II ram/auxilliary ram. Aux ram is utilised for the 80 column mode
     type ram_type is array (natural range <>) of std_logic_vector(7 downto 0);
@@ -161,11 +162,10 @@ architecture synthesis of main is
     
     signal DISK_READY          : std_logic_vector(1 downto 0);
     signal DISK_CHANGE         : std_logic_vector(1 downto 0);
-    signal disk_mount          : std_logic_vector(1 downto 0);
 
+    signal reset_core_n        : std_logic := '1';
+    signal reset_core_int      : std_logic := '0';
     signal dd_reset            : std_logic := reset_soft_i or reset_hard_i;
-    signal reset_core          : std_logic := '0';
-    
     
     signal hdd_mounted         : std_logic := '0';
     signal hdd_read            : std_logic;
@@ -183,10 +183,7 @@ architecture synthesis of main is
     signal UART_TXD            : std_logic; 
     signal UART_DTR            : std_logic; 
     signal UART_DSR            : std_logic;
-    
     signal RTC                 : std_logic_vector(64 downto 0);
-    
-    signal blink : std_logic   := '0';
     
     constant m65_capslock      : integer := 72;
     
@@ -201,6 +198,13 @@ architecture synthesis of main is
     end function;
 
 begin
+   
+   
+   -- prevent data corruption by not allowing a soft reset to happen while the cache is still dirty
+   -- since we can have more than one cache that might be dirty, we convert the std_logic_vector of length G_VDNUM
+   -- into an unsigned and check for zero
+   prevent_reset <= '0' when unsigned(cache_dirty) = 0 else
+                    '1';
 
    padded_l <= '0' & audio_l & "00000";
    padded_r <= '0' & audio_r & "00000";
@@ -208,14 +212,23 @@ begin
    audio_left_o(15) <= not padded_l(15);
    audio_left_o(14 downto 0) <= signed(padded_l(14 downto 0));
    audio_right_o(15) <= not padded_r(15);
-   audio_right_o(14 downto 0) <= signed(padded_l(14 downto 0));
+   audio_right_o(14 downto 0) <= signed(padded_r(14 downto 0));
 
-   process(apple_qnice_clk_i)
-    begin
-      if falling_edge(apple_qnice_clk_i) then
-        blink <= not blink;
+   --------------------------------------------------------------------------------------------------
+   -- Hard reset
+   --------------------------------------------------------------------------------------------------
+
+   hard_reset_proc : process (clk_main_i)
+   begin
+      if rising_edge(clk_main_i) then
+         if reset_soft_i = '1' or reset_hard_i = '1'  then
+            reset_core_n <= prevent_reset and (not reset_hard_i);
+         else
+            reset_core_n <= '1';
+         end if;
       end if;
-    end process;
+   end process hard_reset_proc;
+
 
    process(clk_main_i) begin	
         --flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
@@ -250,31 +263,29 @@ begin
         end if;
     end process;
   
- 
-    -- drive 1
-    drive1 : process(clk_main_i) -- try clock main
+    
+    -- drive 1 mirror the already-latched mount state in vdrives
+    drive1 : process(clk_main_i)
     begin
         if rising_edge(clk_main_i) then
             if img_mounted(0) = '1' then
-                disk_mount(0) <= '1' when (unsigned(img_size) /= 0) else '0';
                 DISK_CHANGE(0) <= not DISK_CHANGE(0);
-                -- disk_protect <= img_readonly;
             end if;
         end if;
     end process;
     
+    -- drive 2 mirror the already-latched mount state in vdrives
     /*
     drive2 : process(clk_main_i)
     begin
-      if rising_edge(clk_main_i) then
-         if reset_core = '1' then
-              DISK_CHANGE(1) <= '0';
-            elsif img_mounted(1) = '1' then
-              DISK_CHANGE(1) <= not DISK_CHANGE(1);
+        if rising_edge(clk_main_i) then
+            if img_mounted(1) = '1' then
+                disk_mount(1)  <= vdrives_mounted(1);
+                DISK_CHANGE(1) <= not DISK_CHANGE(1);
             end if;
         end if;
     end process;
-   */
+    */
    
   
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
@@ -309,9 +320,9 @@ begin
         clk_14m         => clk_main_i,
         clk_50m         => apple_qnice_clk_i,
         cpu_wait        => cpu_wait_hdd,
-        cpu_type        => '1', -- 65c02 - Apple IIe Enhanced
-        reset_cold      => reset_hard_i,
-        reset_warm      => reset_soft_i,
+        cpu_type        => '1', -- 1 = 65c02 - Apple IIe Enhanced, 2 non Enhanced
+        reset_cold      => not reset_core_n,--reset_hard_i,
+        reset_warm      => not reset_core_n,--reset_soft_i,
         
         hblank          => video_hblank_o,
         vblank          => video_vblank_o,
@@ -397,9 +408,9 @@ begin
 	    mouse_strobe   =>  '1',
 
 	    mouse_4_inslot  => '1',
-	    mouse_5_inslot  => '1',
-	    mb_4_inslot     => '1', -- enable mockingboard active low ( disabled for now )
-	    mb_5_inslot     => '1', -- enable mockingboard active low ( disabled for now )
+	    mouse_5_inslot  => '0', -- enable mouse active low
+	    mb_4_inslot     => '0', -- enable mockingboard active low
+	    mb_5_inslot     => '1', -- enable mockingboard active low ( disabled for now ), fdc is in slot 5
 	    saturn_5_inslot => '1'
         
    );
@@ -413,7 +424,7 @@ begin
       (
          clk_qnice_i       => apple_qnice_clk_i,
          clk_core_i        => clk_main_i,
-         reset_core_i      => reset_soft_i or reset_hard_i,
+         reset_core_i      => not reset_core_n,--reset_soft_i or reset_hard_i,
 
          -- Core clock domain
          img_mounted_o     => img_mounted,
@@ -457,7 +468,7 @@ begin
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
-        reset        => dd_reset,
+        reset        => not reset_core_n,--dd_reset,
         ram_addr     => TRACK1_RAM_ADDR,
         ram_di       => TRACK1_RAM_DI,
         ram_do       => TRACK1_RAM_DO,
@@ -466,7 +477,7 @@ begin
         track        => TRACK1,
         busy         => TRACK1_RAM_BUSY,
         change       => DISK_CHANGE(0),
-        mount        => disk_mount(0),
+        mount        => vdrives_mounted(0),
         ready        => DISK_READY(0),
         active       => D1_ACTIVE,
 
@@ -485,32 +496,31 @@ begin
    i_floppy_track_2 : entity work.floppy_track
     port map (
         
-        clk          => clk_main_i,
-        sd_clk       => apple_qnice_clk_i,
-        reset        => sd_drives_reset(1),
+        clk          => clk_main_i, -- 14.31760 Mhz
+        reset        => dd_reset,
         ram_addr     => TRACK2_RAM_ADDR,
         ram_di       => TRACK2_RAM_DI,
         ram_do       => TRACK2_RAM_DO,
         ram_we       => TRACK2_RAM_WE,
         
-        track        => unsigned(track2_sd),
+        track        => TRACK2,
         busy         => TRACK2_RAM_BUSY,
         change       => DISK_CHANGE(1),
-        mount        => vdrives_mounted(1), --disk_mount(1),
-        ready        => disk_ready_sd_2,
-        active       => d2_active_sd,
+        mount        => disk_mount(1),
+        ready        => DISK_READY(1),
+        active       => D2_ACTIVE,
 
         sd_buff_addr => sd_buff_addr,
         sd_buff_dout => sd_buff_dout,
         sd_buff_din  => sd_buff_din(1),
         sd_buff_wr   => sd_buff_wr,
 
-        sd_lba       => sd_lba(1),--sd_lba(2),
-        sd_rd        => sd_rd(1),--sd_rd(2),
-        sd_wr        => sd_wr(1),--sd_wr(2),
-        sd_ack       => sd_ack(1)--sd_ack(2)	
-   );*/
-   
+        sd_lba       => sd_lba(1),
+        sd_rd        => sd_rd(1),
+        sd_wr        => sd_wr(1),
+        sd_ack       => sd_ack(1)	
+   );
+   */
    
    -- to do
    /*
