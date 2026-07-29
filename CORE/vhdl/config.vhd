@@ -331,7 +331,7 @@ constant OPTM_ITEMS        : string :=
    "\n"                     &
    " A:%s\n"                &
    --" Drive Y:%s\n"        &
-   --" B:%s\n"              &
+   --" B:%s\n"                &
    "\n"                     &
    " Demo Headline B\n"     &
    "\n"                     &

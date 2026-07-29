@@ -84,8 +84,10 @@ constant C_HMAP_M2M           : std_logic_vector(15 downto 0) := x"0000";     --
 -- the file- and directory browsing capabilities of the firmware
 constant C_DEV_APPLE_VDRIVES   : std_logic_vector(15 downto 0) := x"0100"; -- virtual device management system
 constant C_DEV_APPLE_MOUNT0    : std_logic_vector(15 downto 0) := x"0101"; -- ram 0 to buffer dsk images
---constant C_DEV_APPLE_MOUNT1    : std_logic_vector(15 downto 0) := x"0102"; -- ram 1 to buffer hd images
---constant C_DEV_APPLE_MOUNT2    : std_logic_vector(15 downto 0) := x"0103"; -- ram 2 to buffer dsk images
+--constant C_DEV_APPLE_MOUNT1    : std_logic_vector(15 downto 0) := x"0102"; -- ram 1 to buffer dsk images
+
+--constant C_DEV_APPLE_MOUNT2    : std_logic_vector(15 downto 0) := x"0103"; -- ram 1 to buffer hdd images
+
 
 -- Virtual drive management system (handled by vdrives.vhd and the firmware)
 -- If you are not using virtual drives, make sure that:

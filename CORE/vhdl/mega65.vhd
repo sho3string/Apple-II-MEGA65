@@ -677,7 +677,7 @@ begin
        qnice_apple_we <= '0';
     
        qnice_apple_mount0_buf_ram_we <= '0';
-       --qnice_apple_mount1_buf_ram_we <= '0';
+       qnice_apple_mount1_buf_ram_we <= '0';
     
        case qnice_dev_id_i is
           when C_DEV_APPLE_VDRIVES =>
@@ -689,10 +689,10 @@ begin
              qnice_apple_mount0_buf_ram_we <= qnice_dev_we_i;
              qnice_dev_data_o <= x"00" & qnice_apple_mount0_buf_ram_data;
     
-          --when C_DEV_APPLE_MOUNT1 =>
-          --   qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
-          --   qnice_dev_data_o <= x"00" & qnice_apple_mount1_buf_ram_data;
-    
+          /*when C_DEV_APPLE_MOUNT1 =>
+             qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
+             qnice_dev_data_o <= x"00" & qnice_apple_mount1_buf_ram_data;
+            */
           when others =>
              null;
        end case;
@@ -725,8 +725,8 @@ begin
       data_a    => qnice_dev_data_i(7 downto 0),
       wren_a    => qnice_apple_mount1_buf_ram_we,
       q_a       => qnice_apple_mount1_buf_ram_data
-   ); */
-      
+   );
+      */
     
 end architecture synthesis;
 

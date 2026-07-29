@@ -157,14 +157,12 @@ dualport_2clk_ram #(
     ) floppy_dpram (
         .clock_a         (clk),
         .address_a       ({rel_lba, sd_buff_addr}),
-        .do_latch_addr_a (1'b0),
+        .wren_a          (sd_buff_wr & sd_ack),
         .data_a          (sd_buff_dout),
-        .wren_a          (sd_buff_wr && sd_ack),
         .q_a             (sd_buff_din),
 
         .clock_b         (clk),
         .address_b       (ram_addr),
-        .do_latch_addr_b (1'b0),
         .data_b          (ram_di),
         .wren_b          (ram_we),
         .q_b             (ram_do)
