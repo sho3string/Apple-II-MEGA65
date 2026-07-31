@@ -161,11 +161,10 @@ architecture synthesis of main is
     signal TRACK2_RAM_BUSY     : std_logic;
     
     signal DISK_READY          : std_logic_vector(1 downto 0);
-    signal DISK_CHANGE         : std_logic_vector(1 downto 0);
+    signal DISK_CHANGE         : std_logic_vector(1 downto 0) := (others => '0');
 
     signal reset_core_n        : std_logic := '1';
     signal reset_core_int      : std_logic := '0';
-    signal dd_reset            : std_logic := reset_soft_i or reset_hard_i;
     
     signal hdd_mounted         : std_logic := '0';
     signal hdd_read            : std_logic;
@@ -275,18 +274,14 @@ begin
     end process;
     
     -- drive 2 mirror the already-latched mount state in vdrives
-    /*
     drive2 : process(clk_main_i)
     begin
         if rising_edge(clk_main_i) then
             if img_mounted(1) = '1' then
-                disk_mount(1)  <= vdrives_mounted(1);
                 DISK_CHANGE(1) <= not DISK_CHANGE(1);
             end if;
         end if;
     end process;
-    */
-   
   
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
    i_keyboard : entity work.keyboard
@@ -321,8 +316,8 @@ begin
         clk_50m         => apple_qnice_clk_i,
         cpu_wait        => cpu_wait_hdd,
         cpu_type        => '1', -- 1 = 65c02 - Apple IIe Enhanced, 2 non Enhanced
-        reset_cold      => not reset_core_n,--reset_hard_i,
-        reset_warm      => not reset_core_n,--reset_soft_i,
+        reset_cold      => not reset_core_n,
+        reset_warm      => not reset_core_n,
         
         hblank          => video_hblank_o,
         vblank          => video_vblank_o,
@@ -424,7 +419,7 @@ begin
       (
          clk_qnice_i       => apple_qnice_clk_i,
          clk_core_i        => clk_main_i,
-         reset_core_i      => not reset_core_n,--reset_soft_i or reset_hard_i,
+         reset_core_i      => not reset_core_n,
 
          -- Core clock domain
          img_mounted_o     => img_mounted,
@@ -432,7 +427,6 @@ begin
          img_size_o        => img_size,
          img_type_o        => img_type,
          drive_mounted_o   => vdrives_mounted,
-         --disk_change_o     => DISK_CHANGE,
          -- Cache output signals: The dirty flags can be used to enforce data consistency
          -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
          -- The flushing flags can be used to signal the fact that the caches are currently
@@ -468,7 +462,7 @@ begin
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
-        reset        => not reset_core_n,--dd_reset,
+        reset        => not reset_core_n,
         ram_addr     => TRACK1_RAM_ADDR,
         ram_di       => TRACK1_RAM_DI,
         ram_do       => TRACK1_RAM_DO,
@@ -492,12 +486,12 @@ begin
         sd_ack       => sd_ack(0)	
    );
    
-   /*
+   
    i_floppy_track_2 : entity work.floppy_track
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
-        reset        => dd_reset,
+        reset        => not reset_core_n,
         ram_addr     => TRACK2_RAM_ADDR,
         ram_di       => TRACK2_RAM_DI,
         ram_do       => TRACK2_RAM_DO,
@@ -506,7 +500,7 @@ begin
         track        => TRACK2,
         busy         => TRACK2_RAM_BUSY,
         change       => DISK_CHANGE(1),
-        mount        => disk_mount(1),
+        mount        => vdrives_mounted(1),
         ready        => DISK_READY(1),
         active       => D2_ACTIVE,
 
@@ -520,7 +514,7 @@ begin
         sd_wr        => sd_wr(1),
         sd_ack       => sd_ack(1)	
    );
-   */
+   
    
    -- to do
    /*

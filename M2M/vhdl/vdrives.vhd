@@ -115,7 +115,7 @@ use xpm.vcomponents.all;
 
 entity vdrives is
 generic (
-   VDNUM             : natural := 1;      -- amount of virtual drives, MiSTer supports a maximum of 10
+   VDNUM             : natural := 2;      -- amount of virtual drives, MiSTer supports a maximum of 10
    BLKSZ             : natural := 2       -- block size for LBA adressing: 0..7: 0 = 128, 1 = 256, 2 = 512(default), .. 7 = 16384
 );
 port (

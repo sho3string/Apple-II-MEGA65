@@ -316,7 +316,7 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 26;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 27;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
@@ -331,7 +331,7 @@ constant OPTM_ITEMS        : string :=
    "\n"                     &
    " A:%s\n"                &
    --" Drive Y:%s\n"        &
-   --" B:%s\n"                &
+   " B:%s\n"                &
    "\n"                     &
    " Demo Headline B\n"     &
    "\n"                     &
@@ -364,10 +364,10 @@ constant OPTM_ITEMS        : string :=
 constant OPTM_G_HDMI       : integer := 1;
 constant OPTM_G_Drive_A    : integer := 2;
 --constant OPTM_G_Drive_Y    : integer := 4;
---constant OPTM_G_Drive_B    : integer := 3;
-constant OPTM_G_CRT        : integer := 3;
-constant OPTM_G_Zoom       : integer := 4;
-constant OPTM_G_Audio      : integer := 5;
+constant OPTM_G_Drive_B    : integer := 3;
+constant OPTM_G_CRT        : integer := 4;
+constant OPTM_G_Zoom       : integer := 5;
+constant OPTM_G_Audio      : integer := 6;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -380,7 +380,7 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_LINE,                              -- Line
     OPTM_G_Drive_A + OPTM_G_MOUNT_DRV + OPTM_G_START,        -- Drive A
     --OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,      -- HDD
-    --OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,      -- Drive B
+    OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,        -- Drive B
     OPTM_G_LINE,                              -- Line
     OPTM_G_HEADLINE,                          -- Headline "Demo Headline B"
     OPTM_G_LINE,                              -- Line

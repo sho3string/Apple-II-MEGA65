@@ -242,16 +242,16 @@ signal video_rst              : std_logic;
 ---------------------------------------------------------------------------------------------
 
 -- Democore menu items
-constant C_MENU_HDMI_16_9_50   : natural := 9;
-constant C_MENU_HDMI_16_9_60   : natural := 10;
-constant C_MENU_HDMI_4_3_50    : natural := 11;
-constant C_MENU_HDMI_5_4_50    : natural := 12;
-constant C_MENU_HDMI_640_60    : natural := 13;
-constant C_MENU_HDMI_720_5994  : natural := 14;
-constant C_MENU_SVGA_800_60    : natural := 15;
-constant C_MENU_CRT_EMULATION  : natural := 21;
-constant C_MENU_HDMI_ZOOM      : natural := 22;
-constant C_MENU_IMPROVE_AUDIO  : natural := 23;
+constant C_MENU_HDMI_16_9_50   : natural := 10;
+constant C_MENU_HDMI_16_9_60   : natural := 11;
+constant C_MENU_HDMI_4_3_50    : natural := 12;
+constant C_MENU_HDMI_5_4_50    : natural := 13;
+constant C_MENU_HDMI_640_60    : natural := 14;
+constant C_MENU_HDMI_720_5994  : natural := 15;
+constant C_MENU_SVGA_800_60    : natural := 16;
+constant C_MENU_CRT_EMULATION  : natural := 22;
+constant C_MENU_HDMI_ZOOM      : natural := 23;
+constant C_MENU_IMPROVE_AUDIO  : natural := 24;
 
 -- Video gen
 signal div                       : std_logic_vector(2 downto 0);
@@ -310,6 +310,12 @@ signal qnice_disk0_readdata            : std_logic_vector(15 downto 0);
 signal qnice_disk0_readdatavalid       : std_logic;
 signal qnice_disk0_waitrequest         : std_logic;
 
+signal qnice_apple_mount0_buf_addr     : std_logic_vector(17 downto 0);
+signal qnice_apple_mount0_buf_ram_wait : std_logic;
+signal qnice_apple_mount0_buf_ram_we   : std_logic;
+signal qnice_apple_mount0_buf_ram_ce   : std_logic;
+signal qnice_apple_mount0_buf_ram_data : std_logic_vector(7 downto 0);
+
 signal qnice_apple_mount1_buf_addr     : std_logic_vector(17 downto 0);
 signal qnice_apple_mount1_buf_ram_wait : std_logic;
 signal qnice_apple_mount1_buf_ram_we   : std_logic;
@@ -326,12 +332,6 @@ signal qnice_disk1_readdata            : std_logic_vector(15 downto 0);
 signal qnice_disk1_readdatavalid       : std_logic;
 signal qnice_disk1_waitrequest         : std_logic;
 
-
-signal qnice_apple_mount0_buf_ram_we   : std_logic;
-signal qnice_apple_mount0_buf_ram_data : std_logic_vector(7 downto 0);
-
-signal qnice_apple_mount2_buf_ram_we   : std_logic;
-signal qnice_apple_mount2_buf_ram_data : std_logic_vector(7 downto 0);
 
 signal qnice_disk2_write               : std_logic;
 signal qnice_disk2_read                : std_logic;
@@ -678,7 +678,10 @@ begin
     
        qnice_apple_mount0_buf_ram_we <= '0';
        qnice_apple_mount1_buf_ram_we <= '0';
-    
+       
+       qnice_apple_mount0_buf_addr <= (others => '0');
+       qnice_apple_mount1_buf_addr <= (others => '0');
+      
        case qnice_dev_id_i is
           when C_DEV_APPLE_VDRIVES =>
              qnice_apple_ce   <= qnice_dev_ce_i;
@@ -686,13 +689,15 @@ begin
              qnice_dev_data_o <= qnice_apple_data;
     
           when C_DEV_APPLE_MOUNT0 =>
+             qnice_apple_mount0_buf_addr <= qnice_dev_addr_i(17 downto 0);
              qnice_apple_mount0_buf_ram_we <= qnice_dev_we_i;
              qnice_dev_data_o <= x"00" & qnice_apple_mount0_buf_ram_data;
     
-          /*when C_DEV_APPLE_MOUNT1 =>
+          when C_DEV_APPLE_MOUNT1 =>
+             qnice_apple_mount1_buf_addr <= qnice_dev_addr_i(17 downto 0);
              qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
              qnice_dev_data_o <= x"00" & qnice_apple_mount1_buf_ram_data;
-            */
+            
           when others =>
              null;
        end case;
@@ -706,13 +711,13 @@ begin
     )
     port map (
       clock_a   => qnice_clk_i,
-      address_a => qnice_dev_addr_i(17 downto 0),
+      address_a => qnice_apple_mount0_buf_addr(17 downto 0),
       data_a    => qnice_dev_data_i(7 downto 0),
       wren_a    => qnice_apple_mount0_buf_ram_we,
       q_a       => qnice_apple_mount0_buf_ram_data
    );
     
-    /*
+    
     mount1_buf_ram : entity work.dualport_2clk_ram
     generic map (
       ADDR_WIDTH => 18,
@@ -721,12 +726,12 @@ begin
    )
    port map (
       clock_a   => qnice_clk_i,
-      address_a => qnice_dev_addr_i(17 downto 0),
+      address_a => qnice_apple_mount1_buf_addr(17 downto 0),
       data_a    => qnice_dev_data_i(7 downto 0),
       wren_a    => qnice_apple_mount1_buf_ram_we,
       q_a       => qnice_apple_mount1_buf_ram_data
    );
-      */
+      
     
 end architecture synthesis;
 
