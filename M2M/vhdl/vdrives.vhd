@@ -100,7 +100,7 @@ package vdrives_pkg is
    type vd_std_array is array(natural range <>) of std_logic;
    type vd_unsigned_array is array(natural range <>) of unsigned;
 
-   constant AW: natural := 8;    -- 9 bit for Apple II -- 14-bit
+   constant AW: natural := 8;   -- 14-bit
    constant DW: natural := 7;    -- 8-bit
 end package;
 
