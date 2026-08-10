@@ -1,10 +1,10 @@
 -- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 -- --------------------------------------------------------------------------------
 -- Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
--- Date        : Sun Jul 26 22:25:28 2026
+-- Date        : Sun Jul 26 22:25:27 2026
 -- Host        : shoestring-virtual-machine running 64-bit Ubuntu 22.04.4 LTS
--- Command     : write_vhdl -force -mode synth_stub
---               /mnt/hgfs/GitHub/Apple-II-MEGA65/CORE/CORE-R3.srcs/sources_1/ip/hdd_sector_bram/hdd_sector_bram_stub.vhdl
+-- Command     : write_vhdl -force -mode synth_stub -rename_top hdd_sector_bram -prefix
+--               hdd_sector_bram_ hdd_sector_bram_stub.vhdl
 -- Design      : hdd_sector_bram
 -- Purpose     : Stub declaration of top-level module interface
 -- Device      : xc7a200tfbg484-2

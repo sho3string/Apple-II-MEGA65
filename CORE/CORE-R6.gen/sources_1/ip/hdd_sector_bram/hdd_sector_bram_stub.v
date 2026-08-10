@@ -1,7 +1,7 @@
 // Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.
 // --------------------------------------------------------------------------------
 // Tool Version: Vivado v.2022.2 (lin64) Build 3671981 Fri Oct 14 04:59:54 MDT 2022
-// Date        : Wed Jul  8 20:59:02 2026
+// Date        : Sat Aug  1 09:48:54 2026
 // Host        : shoestring-virtual-machine running 64-bit Ubuntu 22.04.4 LTS
 // Command     : write_verilog -force -mode synth_stub
 //               /mnt/hgfs/GitHub/Apple-II-MEGA65/CORE/CORE-R6.gen/sources_1/ip/hdd_sector_bram/hdd_sector_bram_stub.v
