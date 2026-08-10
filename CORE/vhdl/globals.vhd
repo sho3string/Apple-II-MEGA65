@@ -189,25 +189,29 @@ constant audio_mix      : std_logic_vector( 1 downto 0) := "00"; -- 0 - no mix, 
 -----------------------------------------------------------------------------------------------------------
 constant C_MENU_FD_A           : integer := 5;
 constant C_MENU_FD_B           : integer := 6;
+constant C_MENU_NO_4           : integer := 11;
 constant C_MENU_MB_4           : integer := 12;
 constant C_MENU_MO_4           : integer := 13;
-constant C_MENU_MB_5           : integer := 17;
-constant C_MENU_MO_5           : integer := 18;
-constant C_MENU_HDMI_16_9_50   : natural := 25;
-constant C_MENU_HDMI_16_9_60   : natural := 26;
-constant C_MENU_HDMI_4_3_50    : natural := 27;
-constant C_MENU_HDMI_5_4_50    : natural := 28;
-constant C_MENU_HDMI_640_60    : natural := 29;
-constant C_MENU_HDMI_720_5994  : natural := 30;
-constant C_MENU_SVGA_800_60    : natural := 31;
-constant C_MENU_CRT_EMULATION  : natural := 34;
-constant C_MENU_HDMI_ZOOM      : natural := 35;
-constant C_MENU_IMPROVE_AUDIO  : natural := 36;
-constant C_MENU_COLOR          : natural := 39;
-constant C_MENU_BW             : natural := 40;
-constant C_MENU_GREEN          : natural := 41;
-constant C_MENU_AMBER          : natural := 42;
-constant C_MENU_CPU_65C02      : natural := 46;
+constant C_MENU_NO_5           : integer := 17;
+constant C_MENU_MB_5           : integer := 18;
+constant C_MENU_MO_5           : integer := 19;
+constant C_MENU_SN_5           : integer := 20;
+constant C_MENU_HDMI_16_9_50   : natural := 27;
+constant C_MENU_HDMI_16_9_60   : natural := 28;
+constant C_MENU_HDMI_4_3_50    : natural := 29;
+constant C_MENU_HDMI_5_4_50    : natural := 30;
+constant C_MENU_HDMI_640_60    : natural := 31;
+constant C_MENU_HDMI_720_5994  : natural := 32;
+constant C_MENU_SVGA_800_60    : natural := 33;
+constant C_MENU_CRT_EMULATION  : natural := 36;
+constant C_MENU_HDMI_ZOOM      : natural := 37;
+constant C_MENU_IMPROVE_AUDIO  : natural := 38;
+constant C_MENU_COLOR          : natural := 41;
+constant C_MENU_BW             : natural := 42;
+constant C_MENU_GREEN          : natural := 43;
+constant C_MENU_AMBER          : natural := 44;
+constant C_MENU_CPU_65C02      : natural := 48;
+
 
 end package globals;
 

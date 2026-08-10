@@ -329,7 +329,7 @@ begin
                    drive_mounted_reg(i) <= '1';
                 end if;
     
-                -- MiSTer-style disk change toggle
+                -- MiSTer-style disk change toggle - used by Apple IIe core
                 disk_change_reg(i) <= not disk_change_reg(i);
     
              end if;

@@ -191,10 +191,10 @@ architecture synthesis of main is
     
     constant m65_capslock      : integer := 72;
     
-    signal slot4_mockingboard  : std_logic := '1';
-    signal slot4_mouse         : std_logic := '1';
-    signal slot5_mockingboard  : std_logic := '1';
-    signal slot5_mouse         : std_logic := '1';
+    signal slot4_mockingboard  : std_logic := '0';
+    signal slot4_mouse         : std_logic := '0';
+    signal slot5_mockingboard  : std_logic := '0';
+    signal slot5_mouse         : std_logic := '0';
     signal slot5_saturn5       : std_logic := '0';
     
     signal screen_mode         : std_logic_vector(1 downto 0) := "00";
@@ -205,36 +205,29 @@ architecture synthesis of main is
 
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
+    constant C_MENU_NO_4           : integer := 11;
     constant C_MENU_MB_4           : integer := 12;
     constant C_MENU_MO_4           : integer := 13;
-    constant C_MENU_MB_5           : integer := 17;
-    constant C_MENU_MO_5           : integer := 18;
-    constant C_MENU_HDMI_16_9_50   : natural := 25;
-    constant C_MENU_HDMI_16_9_60   : natural := 26;
-    constant C_MENU_HDMI_4_3_50    : natural := 27;
-    constant C_MENU_HDMI_5_4_50    : natural := 28;
-    constant C_MENU_HDMI_640_60    : natural := 29;
-    constant C_MENU_HDMI_720_5994  : natural := 30;
-    constant C_MENU_SVGA_800_60    : natural := 31;
-    constant C_MENU_CRT_EMULATION  : natural := 34;
-    constant C_MENU_HDMI_ZOOM      : natural := 35;
-    constant C_MENU_IMPROVE_AUDIO  : natural := 36;
-    constant C_MENU_COLOR          : natural := 39;
-    constant C_MENU_BW             : natural := 40;
-    constant C_MENU_GREEN          : natural := 41;
-    constant C_MENU_AMBER          : natural := 42;
-    constant C_MENU_CPU_65C02      : natural := 46;
+    constant C_MENU_NO_5           : integer := 17;
+    constant C_MENU_MB_5           : integer := 18;
+    constant C_MENU_MO_5           : integer := 19;
+    constant C_MENU_SN_5           : integer := 20;
+    constant C_MENU_HDMI_16_9_50   : natural := 27;
+    constant C_MENU_HDMI_16_9_60   : natural := 28;
+    constant C_MENU_HDMI_4_3_50    : natural := 29;
+    constant C_MENU_HDMI_5_4_50    : natural := 30;
+    constant C_MENU_HDMI_640_60    : natural := 31;
+    constant C_MENU_HDMI_720_5994  : natural := 32;
+    constant C_MENU_SVGA_800_60    : natural := 33;
+    constant C_MENU_CRT_EMULATION  : natural := 36;
+    constant C_MENU_HDMI_ZOOM      : natural := 37;
+    constant C_MENU_IMPROVE_AUDIO  : natural := 38;
+    constant C_MENU_COLOR          : natural := 41;
+    constant C_MENU_BW             : natural := 42;
+    constant C_MENU_GREEN          : natural := 43;
+    constant C_MENU_AMBER          : natural := 44;
+    constant C_MENU_CPU_65C02      : natural := 48;
     
-    /*
-    function reverse_vd_vec_array(arr : vd_vec_array) return vd_vec_array is
-        variable result : vd_vec_array(arr'RANGE)(arr'element'RANGE);
-    begin
-        for i in arr'RANGE loop
-        result(arr'HIGH - i + arr'LOW) := arr(i);
-        end loop;
-        return result;
-    end function;
-    */
 
 begin
    
@@ -272,22 +265,33 @@ begin
     end if;
    end process;
    
-   slot_assignment_proc : process(clk_main_i)
+    slot_assignment_proc : process(all)
     begin
-       -- Mouse selected for Slot 4:
-       -- Mouse in Slot 4, Mockingboard in Slot 5
-       if osm_control_i(C_MENU_MO_4) = '1' then
-          slot4_mockingboard <= '1';
-          slot5_mockingboard <= '0';
+       -- Defaults: nothing installed
+       -- Mouse and Mockingboard enables are active low.
+       slot4_mockingboard <= '0';
+       slot5_mockingboard <= '0';
+       slot4_mouse        <= '0';
+       slot5_mouse        <= '0';
+       slot5_saturn5      <= '0';
     
-          slot4_mouse        <= '0';
-          slot5_mouse        <= '1';
-       else
-          slot4_mockingboard <= '0';
+       -- Slot 4
+       if osm_control_i(C_MENU_MB_4) = '1' then
+          slot4_mockingboard <= '1';
+    
+       elsif osm_control_i(C_MENU_MO_4) = '1' then
+          slot4_mouse <= '1';
+       end if;
+    
+       -- Slot 5
+       if osm_control_i(C_MENU_MB_5) = '1' then
           slot5_mockingboard <= '1';
     
-          slot4_mouse        <= '1';
-          slot5_mouse        <= '0';
+       elsif osm_control_i(C_MENU_MO_5) = '1' then
+          slot5_mouse <= '1';
+    
+       elsif osm_control_i(C_MENU_SN_5) = '1' then
+          slot5_saturn5 <= '1';
        end if;
     end process;
 
