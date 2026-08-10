@@ -84,7 +84,10 @@ entity main is
       apple_qnice_ce_i        : in  std_logic;
       apple_qnice_we_i        : in  std_logic;
       
-      drive_led_o             : out std_logic
+      drive_led_o             : out std_logic;
+      
+      osm_control_i           : in  std_logic_vector(255 downto 0)
+      
    );
 end entity main;
 
@@ -133,8 +136,12 @@ architecture synthesis of main is
     signal sd_rd          : vd_std_array(G_VDNUM - 1 downto 0);
     signal sd_wr          : vd_std_array(G_VDNUM - 1 downto 0);
     signal sd_blk_cnt     : vd_vec_array(G_VDNUM - 1 downto 0)(5 downto 0);
+    
+    signal fd1_wp         : std_logic := '0';
+    signal fd2_wp         : std_logic := '0';
 
     signal vdrives_mounted: std_logic_vector(G_VDNUM - 1 downto 0);
+    signal disk_change:     std_logic_vector(G_VDNUM - 1 downto 0);
     signal cache_dirty    : std_logic_vector(G_VDNUM - 1 downto 0);
     signal prevent_reset  : std_logic;
     
@@ -161,7 +168,6 @@ architecture synthesis of main is
     signal TRACK2_RAM_BUSY     : std_logic;
     
     signal DISK_READY          : std_logic_vector(1 downto 0);
-    signal DISK_CHANGE         : std_logic_vector(1 downto 0) := (others => '0');
 
     signal reset_core_n        : std_logic := '1';
     signal reset_core_int      : std_logic := '0';
@@ -174,7 +180,6 @@ architecture synthesis of main is
    
     signal sd_lba_unsigned     : unsigned(31 downto 0);
     signal sd_buff_din_unsigned: unsigned(7 downto 0);
-    --signal sd_buff_dout_unsigned: unsigned(7 downto 0);
     
     signal UART_CTS            : std_logic; 
     signal UART_RTS            : std_logic; 
@@ -186,7 +191,41 @@ architecture synthesis of main is
     
     constant m65_capslock      : integer := 72;
     
+    signal slot4_mockingboard  : std_logic := '1';
+    signal slot4_mouse         : std_logic := '1';
+    signal slot5_mockingboard  : std_logic := '1';
+    signal slot5_mouse         : std_logic := '1';
+    signal slot5_saturn5       : std_logic := '0';
     
+    signal screen_mode         : std_logic_vector(1 downto 0) := "00";
+    
+    signal cpu_type            : std_logic  := '1'; -- 0 - 6502, 1 - 65C02
+    signal cpu_type_prev       : std_logic  := '1';
+    signal cpu_mode_changed    : std_logic  := '0';
+
+    constant C_MENU_FD_A           : integer := 5;
+    constant C_MENU_FD_B           : integer := 6;
+    constant C_MENU_MB_4           : integer := 12;
+    constant C_MENU_MO_4           : integer := 13;
+    constant C_MENU_MB_5           : integer := 17;
+    constant C_MENU_MO_5           : integer := 18;
+    constant C_MENU_HDMI_16_9_50   : natural := 25;
+    constant C_MENU_HDMI_16_9_60   : natural := 26;
+    constant C_MENU_HDMI_4_3_50    : natural := 27;
+    constant C_MENU_HDMI_5_4_50    : natural := 28;
+    constant C_MENU_HDMI_640_60    : natural := 29;
+    constant C_MENU_HDMI_720_5994  : natural := 30;
+    constant C_MENU_SVGA_800_60    : natural := 31;
+    constant C_MENU_CRT_EMULATION  : natural := 34;
+    constant C_MENU_HDMI_ZOOM      : natural := 35;
+    constant C_MENU_IMPROVE_AUDIO  : natural := 36;
+    constant C_MENU_COLOR          : natural := 39;
+    constant C_MENU_BW             : natural := 40;
+    constant C_MENU_GREEN          : natural := 41;
+    constant C_MENU_AMBER          : natural := 42;
+    constant C_MENU_CPU_65C02      : natural := 46;
+    
+    /*
     function reverse_vd_vec_array(arr : vd_vec_array) return vd_vec_array is
         variable result : vd_vec_array(arr'RANGE)(arr'element'RANGE);
     begin
@@ -195,6 +234,7 @@ architecture synthesis of main is
         end loop;
         return result;
     end function;
+    */
 
 begin
    
@@ -212,6 +252,44 @@ begin
    audio_left_o(14 downto 0) <= signed(padded_l(14 downto 0));
    audio_right_o(15) <= not padded_r(15);
    audio_right_o(14 downto 0) <= signed(padded_r(14 downto 0));
+   
+   -- write protect
+   fd1_wp <= '1' when osm_control_i(C_MENU_FD_A) else '0';
+   fd2_wp <= '1' when osm_control_i(C_MENU_FD_B) else '0';
+
+   
+   screen_mode_proc : process(clk_main_i)
+   begin
+    -- 00: Color, 01: B&W, 10:Green, 11: Amber
+    if osm_control_i(C_MENU_COLOR) then 
+        screen_mode <= "00";
+    elsif osm_control_i(C_MENU_BW) then 
+        screen_mode <= "01";
+    elsif osm_control_i(C_MENU_GREEN) then 
+        screen_mode <= "10";
+    elsif osm_control_i(C_MENU_AMBER) then 
+        screen_mode <= "11";
+    end if;
+   end process;
+   
+   slot_assignment_proc : process(clk_main_i)
+    begin
+       -- Mouse selected for Slot 4:
+       -- Mouse in Slot 4, Mockingboard in Slot 5
+       if osm_control_i(C_MENU_MO_4) = '1' then
+          slot4_mockingboard <= '1';
+          slot5_mockingboard <= '0';
+    
+          slot4_mouse        <= '0';
+          slot5_mouse        <= '1';
+       else
+          slot4_mockingboard <= '0';
+          slot5_mockingboard <= '1';
+    
+          slot4_mouse        <= '1';
+          slot5_mouse        <= '0';
+       end if;
+    end process;
 
    --------------------------------------------------------------------------------------------------
    -- Hard reset
@@ -220,13 +298,53 @@ begin
    hard_reset_proc : process (clk_main_i)
    begin
       if rising_edge(clk_main_i) then
-         if reset_soft_i = '1' or reset_hard_i = '1'  then
+         if reset_soft_i = '1' or reset_hard_i = '1' or reset_core_int = '1' then
             reset_core_n <= prevent_reset and (not reset_hard_i);
-         else
+        else
             reset_core_n <= '1';
-         end if;
+        end if;
       end if;
    end process hard_reset_proc;
+   
+   --------------------------------------------------------------------------------------------------
+   -- Track when CPU is changed
+   --------------------------------------------------------------------------------------------------
+   
+    cpu_mode_proc : process(clk_main_i)
+    begin
+        if rising_edge(clk_main_i) then
+            -- update cpu_type
+            if osm_control_i(C_MENU_CPU_65C02) then
+                cpu_type <= '1';
+            else
+                cpu_type <= '0';
+            end if;
+    
+            -- detect change
+            if cpu_type /= cpu_type_prev then
+                cpu_mode_changed <= '1';
+            else
+                cpu_mode_changed <= '0';
+            end if;
+    
+            cpu_type_prev <= cpu_type;
+        end if;
+    end process;
+    
+   --------------------------------------------------------------------------------------------------
+   -- Assert reset when CPU is changed
+   --------------------------------------------------------------------------------------------------
+    
+   cpu_reset_proc : process(clk_main_i)
+    begin
+        if rising_edge(clk_main_i) then
+            if cpu_mode_changed = '1' then
+                reset_core_int <= '1';   -- assert reset
+            else
+                reset_core_int <= '0';   -- release reset
+            end if;
+        end if;
+    end process;
 
 
    process(clk_main_i) begin	
@@ -262,27 +380,7 @@ begin
         end if;
     end process;
   
-    
-    -- drive 1 mirror the already-latched mount state in vdrives
-    drive1 : process(clk_main_i)
-    begin
-        if rising_edge(clk_main_i) then
-            if img_mounted(0) = '1' then
-                DISK_CHANGE(0) <= not DISK_CHANGE(0);
-            end if;
-        end if;
-    end process;
-    
-    -- drive 2 mirror the already-latched mount state in vdrives
-    drive2 : process(clk_main_i)
-    begin
-        if rising_edge(clk_main_i) then
-            if img_mounted(1) = '1' then
-                DISK_CHANGE(1) <= not DISK_CHANGE(1);
-            end if;
-        end if;
-    end process;
-  
+
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
    i_keyboard : entity work.keyboard
       port map (
@@ -315,7 +413,7 @@ begin
         clk_14m         => clk_main_i,
         clk_50m         => apple_qnice_clk_i,
         cpu_wait        => cpu_wait_hdd,
-        cpu_type        => '1', -- 1 = 65c02 - Apple IIe Enhanced, 2 non Enhanced
+        cpu_type        => cpu_type,            -- 1 = 65c02 - Apple IIe Enhanced, 2 non Enhanced
         reset_cold      => not reset_core_n,
         reset_warm      => not reset_core_n,
         
@@ -328,7 +426,7 @@ begin
         b               => video_blue_o,
         video_switch    => video_toggle,
         palette_switch  => palette_toggle,
-        screen_mode     => "00", -- Color
+        screen_mode     => screen_mode, -- 00: Color, 01: B&W, 10:Green, 11: Amber
         text_color      => '0', -- text_color,
         color_palette   => "00", -- Original NTSC
         palmode         => '0', -- Disabled
@@ -361,8 +459,9 @@ begin
 	    D2_ACTIVE       => D2_ACTIVE,
 	    DISK_ACT        => drive_led_o,
         
-        D1_WP           => '0', -- disk 1 write protect
-	    D2_WP           => '0', -- disk 2 write protect
+        D1_WP           => fd1_wp, -- disk 1 write protect
+	    D2_WP           => fd2_wp, -- disk 2 write protect
+	    
 	    
 	    HDD_SECTOR      => sd_lba_unsigned(15 downto 0),
 	    HDD_READ        => hdd_read,
@@ -374,6 +473,7 @@ begin
 	    HDD_RAM_DO      => sd_buff_din_unsigned,
 	    
 	    HDD_RAM_WE      => '0',--sd_buff_wr and sd_ack(1),
+	    
 	    
 	    ram_addr        => ram_addr,
         ram_do          => ram_dout,
@@ -399,14 +499,14 @@ begin
 	    mouse_x         => "000000000", --({ps2_mouse[4],ps2_mouse[15:8]}),
 	    mouse_y         => "000000000", --({ps2_mouse[5],ps2_mouse[23:16]}),
 	   
-	    mouse_button   =>  '1',
-	    mouse_strobe   =>  '1',
+	    mouse_button   =>  '0',
+	    mouse_strobe   =>  '0',
 
-	    mouse_4_inslot  => '1',
-	    mouse_5_inslot  => '0', -- enable mouse active low
-	    mb_4_inslot     => '0', -- enable mockingboard active low
-	    mb_5_inslot     => '1', -- enable mockingboard active low ( disabled for now ), fdc is in slot 5
-	    saturn_5_inslot => '1'
+	    mouse_4_inslot  => slot4_mouse,        -- enable mouse active low
+	    mouse_5_inslot  => slot5_mouse,        -- enable mouse active low
+	    mb_4_inslot     => slot4_mockingboard, -- enable mockingboard active low
+	    mb_5_inslot     => slot5_mockingboard, -- enable mockingboard active low
+	    saturn_5_inslot => slot5_saturn5
         
    );
    
@@ -427,6 +527,7 @@ begin
          img_size_o        => img_size,
          img_type_o        => img_type,
          drive_mounted_o   => vdrives_mounted,
+         disk_change_o     => disk_change,
          -- Cache output signals: The dirty flags can be used to enforce data consistency
          -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
          -- The flushing flags can be used to signal the fact that the caches are currently
@@ -462,6 +563,7 @@ begin
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
+        sd_clk       => apple_qnice_clk_i,
         reset        => not reset_core_n,
         ram_addr     => TRACK1_RAM_ADDR,
         ram_di       => TRACK1_RAM_DI,
@@ -470,7 +572,7 @@ begin
         
         track        => TRACK1,
         busy         => TRACK1_RAM_BUSY,
-        change       => DISK_CHANGE(0),
+        change       => disk_change(0),
         mount        => vdrives_mounted(0),
         ready        => DISK_READY(0),
         active       => D1_ACTIVE,
@@ -491,6 +593,7 @@ begin
     port map (
         
         clk          => clk_main_i, -- 14.31760 Mhz
+        sd_clk       => apple_qnice_clk_i,
         reset        => not reset_core_n,
         ram_addr     => TRACK2_RAM_ADDR,
         ram_di       => TRACK2_RAM_DI,
@@ -499,7 +602,7 @@ begin
         
         track        => TRACK2,
         busy         => TRACK2_RAM_BUSY,
-        change       => DISK_CHANGE(1),
+        change       => disk_change(1),
         mount        => vdrives_mounted(1),
         ready        => DISK_READY(1),
         active       => D2_ACTIVE,

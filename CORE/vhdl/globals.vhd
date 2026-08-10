@@ -32,6 +32,10 @@ constant QNICE_FIRMWARE_M2M       : string  := "../../../CORE/m2m-rom/m2m-rom.ro
 -- Select firmware here
 constant QNICE_FIRMWARE           : string  := QNICE_FIRMWARE_M2M;
 
+constant VGA_STD_SYNC             : vga_sync_reshaper_cfg_t := C_VGA_SYNC_RESHAPER_OFF;
+constant HDMI_VIEW                : hdmi_view_cfg_t         := C_HDMI_VIEW_LEGACY;
+
+
 ----------------------------------------------------------------------------------------------------------
 -- Clock Speed(s)
 --
@@ -56,8 +60,8 @@ constant QNICE_CLK_SPEED      : natural := 50_000_000;   -- a change here has de
 --    VGA_*   size of the core's target output post scandoubler
 --    If in doubt, use twice the values found in this link:
 --    https://mister-devel.github.io/MkDocs_MiSTer/advanced/nativeres/#arcade-core-default-native-resolutions
-constant VGA_DX               : natural := 720;
-constant VGA_DY               : natural := 576;
+constant VGA_DX               : natural := 1136;
+constant VGA_DY               : natural := 384;
 
 --    FONT_*  size of one OSM character
 constant FONT_FILE            : string  := "../font/Anikki-16x16-m2m.rom";
@@ -178,6 +182,32 @@ constant audio_cy1      : std_logic_vector(23 downto 0) := std_logic_vector(to_s
 constant audio_cy2      : std_logic_vector(23 downto 0) := std_logic_vector(to_signed(-2023767, 24));
 constant audio_att      : std_logic_vector( 4 downto 0) := "00000";
 constant audio_mix      : std_logic_vector( 1 downto 0) := "00"; -- 0 - no mix, 1 - 25%, 2 - 50%, 3 - 100% (mono)
+
+-----------------------------------------------------------------------------------------------------------
+-- Core menu items
+-- from config.vhd
+-----------------------------------------------------------------------------------------------------------
+constant C_MENU_FD_A           : integer := 5;
+constant C_MENU_FD_B           : integer := 6;
+constant C_MENU_MB_4           : integer := 12;
+constant C_MENU_MO_4           : integer := 13;
+constant C_MENU_MB_5           : integer := 17;
+constant C_MENU_MO_5           : integer := 18;
+constant C_MENU_HDMI_16_9_50   : natural := 25;
+constant C_MENU_HDMI_16_9_60   : natural := 26;
+constant C_MENU_HDMI_4_3_50    : natural := 27;
+constant C_MENU_HDMI_5_4_50    : natural := 28;
+constant C_MENU_HDMI_640_60    : natural := 29;
+constant C_MENU_HDMI_720_5994  : natural := 30;
+constant C_MENU_SVGA_800_60    : natural := 31;
+constant C_MENU_CRT_EMULATION  : natural := 34;
+constant C_MENU_HDMI_ZOOM      : natural := 35;
+constant C_MENU_IMPROVE_AUDIO  : natural := 36;
+constant C_MENU_COLOR          : natural := 39;
+constant C_MENU_BW             : natural := 40;
+constant C_MENU_GREEN          : natural := 41;
+constant C_MENU_AMBER          : natural := 42;
+constant C_MENU_CPU_65C02      : natural := 46;
 
 end package globals;
 

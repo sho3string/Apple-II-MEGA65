@@ -39,6 +39,7 @@ port (
    qnice_audio_mute_o      : out std_logic;
    qnice_audio_filter_o    : out std_logic;
    qnice_zoom_crop_o       : out std_logic;
+   qnice_hdmi_view_size_o  : out std_logic_vector(1 downto 0) := (others => '0');
    qnice_ascal_mode_o      : out std_logic_vector(1 downto 0);
    qnice_ascal_polyphase_o : out std_logic;
    qnice_ascal_triplebuf_o : out std_logic;
@@ -229,30 +230,6 @@ signal main_rst               : std_logic;
 signal video_clk              : std_logic;               
 signal video_rst              : std_logic;
 
----------------------------------------------------------------------------------------------
--- main_clk (MiSTer core's clock)
----------------------------------------------------------------------------------------------
-
----------------------------------------------------------------------------------------------
--- qnice_clk
----------------------------------------------------------------------------------------------
-
----------------------------------------------------------------------------------------------
--- Democore & example stuff: Delete before starting to port your own core
----------------------------------------------------------------------------------------------
-
--- Democore menu items
-constant C_MENU_HDMI_16_9_50   : natural := 10;
-constant C_MENU_HDMI_16_9_60   : natural := 11;
-constant C_MENU_HDMI_4_3_50    : natural := 12;
-constant C_MENU_HDMI_5_4_50    : natural := 13;
-constant C_MENU_HDMI_640_60    : natural := 14;
-constant C_MENU_HDMI_720_5994  : natural := 15;
-constant C_MENU_SVGA_800_60    : natural := 16;
-constant C_MENU_CRT_EMULATION  : natural := 22;
-constant C_MENU_HDMI_ZOOM      : natural := 23;
-constant C_MENU_IMPROVE_AUDIO  : natural := 24;
-
 -- Video gen
 signal div                       : std_logic_vector(2 downto 0);
 signal ce_pix                    : std_logic; -- pixel clock 7.15875 PAL - 14.3175 NTSC
@@ -370,7 +347,6 @@ signal hr_disk1_waitrequest         : std_logic;
 begin
 
 
-
    hr_core_write_o      <= '0';
    hr_core_read_o       <= '0';
    hr_core_address_o    <= (others => '0');
@@ -412,16 +388,6 @@ begin
    cart_a_o             <= (others => '0');
    cart_d_o             <= (others => '0');
    
-   -- IEC port: unused by the Apple II core
-   iec_reset_n_o        <= '1';
-   iec_atn_n_o          <= '1';
-   iec_clk_en_o         <= '0';
-   iec_clk_n_o          <= '1';
-   iec_data_en_o        <= '0';
-   iec_data_n_o         <= '1';
-   iec_srq_en_o         <= '0';
-   iec_srq_n_o          <= '1';
-
    main_joy_1_up_n_o    <= '1';
    main_joy_1_down_n_o  <= '1';
    main_joy_1_left_n_o  <= '1';
@@ -574,7 +540,9 @@ begin
          ioctl_addr           => qnice_dn_addr,  
          ioctl_data           => qnice_dn_data,
          
-         drive_led_o          => main_drive_led_o
+         drive_led_o          => main_drive_led_o,
+         
+         osm_control_i        => main_osm_control_i
 
       ); -- i_main
 
@@ -635,6 +603,7 @@ begin
    qnice_audio_mute_o         <= '0';                                         -- audio is not muted
    qnice_audio_filter_o       <= qnice_osm_control_i(C_MENU_IMPROVE_AUDIO);   -- 0 = raw audio, 1 = use filters from globals.vhd
    qnice_zoom_crop_o          <= qnice_osm_control_i(C_MENU_HDMI_ZOOM);       -- 0 = no zoom/crop
+   qnice_hdmi_view_size_o     <= (others => '0');
    
    -- These two signals are often used as a pair (i.e. both '1'), particularly when
    -- you want to run old analog cathode ray tube monitors or TVs (via SCART)
@@ -678,9 +647,9 @@ begin
     
        qnice_apple_mount0_buf_ram_we <= '0';
        qnice_apple_mount1_buf_ram_we <= '0';
-       
        qnice_apple_mount0_buf_addr <= (others => '0');
        qnice_apple_mount1_buf_addr <= (others => '0');
+       
       
        case qnice_dev_id_i is
           when C_DEV_APPLE_VDRIVES =>
@@ -692,15 +661,17 @@ begin
              qnice_apple_mount0_buf_addr <= qnice_dev_addr_i(17 downto 0);
              qnice_apple_mount0_buf_ram_we <= qnice_dev_we_i;
              qnice_dev_data_o <= x"00" & qnice_apple_mount0_buf_ram_data;
-    
+        
           when C_DEV_APPLE_MOUNT1 =>
              qnice_apple_mount1_buf_addr <= qnice_dev_addr_i(17 downto 0);
              qnice_apple_mount1_buf_ram_we <= qnice_dev_we_i;
              qnice_dev_data_o <= x"00" & qnice_apple_mount1_buf_ram_data;
+         
             
           when others =>
              null;
        end case;
+       
     end process core_specific_devices;
    
     mount0_buf_ram : entity work.dualport_2clk_ram
@@ -731,7 +702,7 @@ begin
       wren_a    => qnice_apple_mount1_buf_ram_we,
       q_a       => qnice_apple_mount1_buf_ram_data
    );
-      
+   
     
 end architecture synthesis;
 

@@ -76,7 +76,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-    "\n Apple //e Core V1\n\n" &
+    "\n Apple //e Core A3\n\n" &
    " by Muse\n" &
    " Powered by MiSTer2MEGA65 v2.0.1\n\n\n" &
    " Press HELP\n" &
@@ -255,7 +255,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "Apple //e V1.0";
+constant CORENAME          : string := "Apple //e Alpha V3";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -316,24 +316,39 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 27;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 49;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
-constant OPTM_DX           : natural := 23;
-constant OPTM_DY           : natural := 18;
+constant OPTM_DX           : natural := 32;
+constant OPTM_DY           : natural := 22;
 
 constant OPTM_ITEMS        : string :=
    " Apple //e core\n"      &
    "\n"                     &
    " A:%s\n"                &
-   --" Drive Y:%s\n"        &
    " B:%s\n"                &
+   " Write Protect\n"       &
+   " Drive A\n"             &
+   " Drive B\n"             &
    "\n"                     &
-   " Demo Headline B\n"     &
+   " Back to main menu\n"   &
+   "\n"                     &
+   " Expansion slots\n"     &
+   " Slot 4\n"              &
+   " Mockingboard\n"        &
+   " Mouse\n"               &
+   "\n"                     &
+   " Back to main menu\n"   &
+   " Slot 5\n"              &
+   " Mockingboard\n"        &
+   " Mouse\n"               &
+   --" Saturn 5\n"            &
+   "\n"                     &
+   " Back to main menu\n"   &
    "\n"                     &
    " HDMI: %s\n"            &    -- HDMI submenu
    " HDMI Settings\n"       &
@@ -347,15 +362,22 @@ constant OPTM_ITEMS        : string :=
    " 800x600 60 Hz\n"       &
    "\n"                     &
    " Back to main menu\n"   &
-   "\n"                     &
-   " Another Headline\n"    &
-   "\n"                     &
    " HDMI: CRT emulation\n" &
    " HDMI: Zoom-in\n"       &
    " Audio improvements\n"  &
    "\n"                     &
+   " Display\n"             &
+   " Color\n"               &
+   " B&W\n"                 &
+   " Green\n"               &
+   " Amber\n"               &
+   " \n"                    &
+   " Back to main menu\n"   &
+   " \n"                    &
+   " 65C02\n"               &
+   " \n"                    &
    " Close Menu\n";
-
+   
 -- define your own constants here and choose meaningful names
 -- make sure that your first group uses the value 1 (0 means "no menu item", such as text and line),
 -- and be aware that you can only have a maximum of 254 groups (255 means "Close Menu");
@@ -363,11 +385,16 @@ constant OPTM_ITEMS        : string :=
 -- single-select items and therefore also drive mount items need to have unique identifiers
 constant OPTM_G_HDMI       : integer := 1;
 constant OPTM_G_Drive_A    : integer := 2;
---constant OPTM_G_Drive_Y    : integer := 4;
 constant OPTM_G_Drive_B    : integer := 3;
 constant OPTM_G_CRT        : integer := 4;
 constant OPTM_G_Zoom       : integer := 5;
 constant OPTM_G_Audio      : integer := 6;
+constant OPTM_G_WP_A       : integer := 7;
+constant OPTM_G_WP_B       : integer := 8;
+constant OPTM_G_SL_4       : integer := 9;
+constant OPTM_G_SL_5       : integer := 10;
+constant OPTM_G_DISPLAY    : integer := 11;
+constant OPTM_G_CPU        : integer := 12;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -379,10 +406,25 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_HEADLINE,                          -- Headline "Demo Headline A"
     OPTM_G_LINE,                              -- Line
     OPTM_G_Drive_A + OPTM_G_MOUNT_DRV + OPTM_G_START,        -- Drive A
-    --OPTM_G_Drive_Y + OPTM_G_MOUNT_DRV,      -- HDD
     OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,        -- Drive B
+    OPTM_G_SUBMENU,                           -- "Write Protect"
+    OPTM_G_WP_A + OPTM_G_SINGLESEL,           -- Drive A wp toggle
+    OPTM_G_WP_B + OPTM_G_SINGLESEL,           -- Drive B wp toggle
     OPTM_G_LINE,                              -- Line
-    OPTM_G_HEADLINE,                          -- Headline "Demo Headline B"
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_HEADLINE,                          -- Headline "HDMI Settings"
+    OPTM_G_SUBMENU,                           --"Slot 4"
+    OPTM_G_SL_4 + OPTM_G_STDSEL,              -- Mockingboard - default slot 4.
+    OPTM_G_SL_4,                              -- Mouse - default slot 5
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
+    OPTM_G_SUBMENU,                           --"Slot 5"
+    OPTM_G_SL_5,                              -- Mockingboard - default slot 5.
+    OPTM_G_SL_5 + OPTM_G_STDSEL,              -- Mouse - default slot 4
+    --OPTM_G_SL_5 + OPTM_G_STDSEL,              -- Saturn 5 - only in slot 5
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
     OPTM_G_LINE,                              -- Line
     OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
     OPTM_G_HEADLINE,                          -- Headline "HDMI Settings"
@@ -394,14 +436,21 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_HDMI,                              -- 640x480 60 Hz
     OPTM_G_HDMI,                              -- 720x480 59.94 Hz
     OPTM_G_HDMI,                              -- 600p 60 Hz
-    OPTM_G_LINE,                              -- open
-    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- Close submenu / back to main menu
     OPTM_G_LINE,                              -- Line
-    OPTM_G_HEADLINE,                          -- Headline "Another Headline"
-    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE   + OPTM_G_SUBMENU,          -- Close submenu / back to main menu
     OPTM_G_CRT     + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_SUBMENU,                           --"Display"
+    OPTM_G_DISPLAY + OPTM_G_STDSEL,           -- Color
+    OPTM_G_DISPLAY,                           -- Black & White
+    OPTM_G_DISPLAY,                           -- Green
+    OPTM_G_DISPLAY,                           -- Amber
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+    OPTM_G_LINE,
+    OPTM_G_CPU + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 65C02
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE                              -- Close Menu
 );

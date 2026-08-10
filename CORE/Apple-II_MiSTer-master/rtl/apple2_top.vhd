@@ -323,7 +323,7 @@ begin
         MOUSE_4_DO when MOUSE_4_OE = '1' else
         MOUSE_5_DO when MOUSE_5_OE = '1' else
         CLOCK_DO when CLOCK_OE = '1' else
-        HDD_DO when IO_SELECT(7) = '1' or DEVICE_SELECT(7) = '1' else
+        --HDD_DO when IO_SELECT(7) = '1' or DEVICE_SELECT(7) = '1' else
         SSC_DO when IO_SELECT(2) = '1' or DEVICE_SELECT(2) = '1' or SSC_ROM_EN ='1' else 
         DISK_DO;
 
@@ -451,6 +451,7 @@ begin
     TRACK2_BUSY    => TRACK2_BUSY
     );
 	 
+ /*	 
   hdd : entity work.hdd port map (
     CLK_14M        => CLK_14M,
     IO_SELECT      => IO_SELECT(7),
@@ -470,7 +471,8 @@ begin
     ram_do         => HDD_RAM_DO,
     ram_we         => HDD_RAM_WE
     );
-
+ */
+ 
   mb_4 : entity work.mockingboard
     port map (
       CLK_14M    => CLK_14M,
@@ -516,6 +518,7 @@ begin
       unsigned(O_AUDIO_R) => psg_5_audio_r
       );
 
+    
    ssc : component superserial
      port map (
 	CLK_50M 	=> CLK_50M,
@@ -539,7 +542,7 @@ begin
 	UART_DSR 	=> UART_DSR,
 	IRQ_N 		=> ssc_irq_n
 	);
-
+    
 	
 
 

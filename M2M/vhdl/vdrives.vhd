@@ -137,6 +137,9 @@ port (
    -- While "img_mounted_o" needs to be strobed, "drive_mounted" latches the strobe,
    -- so that it can be used for resetting (and unresetting) the drive.
    drive_mounted_o   : out std_logic_vector(VDNUM - 1 downto 0);
+   
+   -- Used by the Apple IIe core
+   disk_change_o   : out std_logic_vector(VDNUM - 1 downto 0);
 
    -- Cache output signals: The dirty flags can be used to enforce data consistency
    -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
@@ -211,6 +214,10 @@ signal img_type_out     : std_logic_vector(1 downto 0);
 signal drive_mounted_reg         : std_logic_vector(VDNUM - 1 downto 0);
 signal drive_mounted_reg_qnice   : std_logic_vector(VDNUM - 1 downto 0);
 
+-- Used by the Apple IIe core
+signal disk_change_reg : std_logic_vector(VDNUM - 1 downto 0)
+                         := (others => '0');
+
 -- Cache signalling registers in core's and QNICE's clock domain
 signal cache_dirty_r_core        : std_logic_vector(VDNUM - 1 downto 0);
 signal cache_dirty_r_qnice       : std_logic_vector(VDNUM - 1 downto 0);
@@ -231,6 +238,7 @@ begin
    img_size_o        <= img_size_out;
    img_type_o        <= img_type_out;
    drive_mounted_o   <= drive_mounted_reg;
+   disk_change_o     <= disk_change_reg;
    cache_dirty_o     <= cache_dirty_r_core;
    cache_flushing_o  <= cache_flushing_r_core;
 
@@ -303,24 +311,33 @@ begin
    -- the protocol demands for a strobed img_mounted signal, but we need a constant signal
    -- to control the drive's reset line
    handle_drive_mounted : process(clk_core_i)
-   begin
-      if rising_edge(clk_core_i) then
-         for i in 0 to VDNUM - 1 loop
-            if reset_core_i = '1' then
-               drive_mounted_reg(i) <= '0';
-            elsif img_mounted_out(i) = '1' then
-               -- to unmount a drive: strobe img_mounted while having the image size set to zero
-               if img_size_out = x"00000000" then
-                  drive_mounted_reg(i) <= '0';
-
-               -- to mount a drive: strobe img_mounted while having a nonzero image size
-               else
-                  drive_mounted_reg(i) <= '1';
-               end if;
-            end if;
-         end loop;
-      end if;
-   end process;
+    begin
+       if rising_edge(clk_core_i) then
+    
+          for i in 0 to VDNUM - 1 loop
+    
+             if reset_core_i = '1' then
+                drive_mounted_reg(i) <= '0';
+                disk_change_reg(i)   <= '0';
+    
+             elsif img_mounted_out(i) = '1' then
+    
+                -- Persistent mounted state
+                if img_size_out = x"00000000" then
+                   drive_mounted_reg(i) <= '0';
+                else
+                   drive_mounted_reg(i) <= '1';
+                end if;
+    
+                -- MiSTer-style disk change toggle
+                disk_change_reg(i) <= not disk_change_reg(i);
+    
+             end if;
+    
+          end loop;
+    
+       end if;
+    end process;
 
    write_qnice_registers : process(clk_qnice_i)
    begin
