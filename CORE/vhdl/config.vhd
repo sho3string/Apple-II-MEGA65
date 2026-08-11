@@ -316,7 +316,7 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 51;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 58;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
@@ -324,14 +324,14 @@ constant OPTM_SIZE         : natural := 51;  -- amount of items including empty 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 32;
-constant OPTM_DY           : natural := 20;
+constant OPTM_DY           : natural := 21;
 
 constant OPTM_ITEMS        : string :=
-   " Apple //e core\n"      &
+   " Apple //e\n"           &
    "\n"                     &
    " A:%s\n"                &
    " B:%s\n"                &
-   " Write Protect\n"       &
+   "   Write Protect\n"     &
    " Drive A\n"             &
    " Drive B\n"             &
    "\n"                     &
@@ -372,10 +372,17 @@ constant OPTM_ITEMS        : string :=
    " B&W\n"                 &
    " Green\n"               &
    " Amber\n"               &
+   " Back to main menu\n"   &
+   " 65C02\n"               &
+   " Video Rom : US|Local\n"&
+   " Analog out: NTSC|PAL\n"&
+   " Colour Palette\n"      &
+   " Original //e NTSC)\n"  &
+   " //gs\n"                &
+   " AppleWin\n"            &
+   " //c PAL\n"             &
    " \n"                    &
    " Back to main menu\n"   &
-   " \n"                    &
-   " 65C02\n"               &
    " \n"                    &
    " Close Menu\n";
    
@@ -396,6 +403,9 @@ constant OPTM_G_SL_4       : integer := 9;
 constant OPTM_G_SL_5       : integer := 10;
 constant OPTM_G_DISPLAY    : integer := 11;
 constant OPTM_G_CPU        : integer := 12;
+constant OPTM_G_ROMSW      : integer := 13;
+constant OPTM_G_PALMODE    : integer := 14;
+constant OPTM_G_COLPAL     : integer := 15;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -449,10 +459,17 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_DISPLAY,                           -- Black & White
     OPTM_G_DISPLAY,                           -- Green
     OPTM_G_DISPLAY,                           -- Amber
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+    OPTM_G_CPU + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- 65C02
+    OPTM_G_ROMSW + OPTM_G_SINGLESEL + OPTM_G_STDSEL,-- Rom switch
+    OPTM_G_PALMODE + OPTM_G_SINGLESEL,              -- PAL/NTSC switch
+    OPTM_G_SUBMENU,                           --"Colour Palette"
+    OPTM_G_COLPAL  + OPTM_G_STDSEL,           -- Original //e NTSC)
+    OPTM_G_COLPAL,                            -- //gs             
+    OPTM_G_COLPAL,                            -- AppleWin
+    OPTM_G_COLPAL,                            -- /c PAL
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
-    OPTM_G_LINE,
-    OPTM_G_CPU + OPTM_G_SINGLESEL + OPTM_G_STDSEL, -- 65C02
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE                              -- Close Menu
 );

@@ -117,8 +117,8 @@ architecture synthesis of main is
     signal open_apple     : std_logic;
     signal closed_apple   : std_logic;
     signal soft_reset     : std_logic := '0';
-    signal video_toggle   : std_logic := '0';	  -- signal to control change of video modes
-    signal palette_toggle : std_logic := '0';	  -- signal to control change of paleetes
+    signal video_toggle_o   : std_logic := '0';	  -- signal to control change of video modes
+    signal palette_toggle_o : std_logic := '0';	  -- signal to control change of paleetes
     
     signal sd_buff_addr   : std_logic_vector(8 downto 0);
     signal sd_buff_dout   : std_logic_vector(7 downto 0);
@@ -191,17 +191,29 @@ architecture synthesis of main is
     
     constant m65_capslock      : integer := 72;
     
+    -- Expansion slots
     signal slot4_mockingboard  : std_logic := '0';
     signal slot4_mouse         : std_logic := '0';
     signal slot5_mockingboard  : std_logic := '0';
     signal slot5_mouse         : std_logic := '0';
     signal slot5_saturn5       : std_logic := '0';
     
+    signal palmode             : std_logic := '0'; -- default NTSC
+    signal romswitch           : std_logic := '1';
     signal screen_mode         : std_logic_vector(1 downto 0) := "00";
     
     signal cpu_type            : std_logic  := '1'; -- 0 - 6502, 1 - 65C02
     signal cpu_type_prev       : std_logic  := '1';
     signal cpu_mode_changed    : std_logic  := '0';
+    
+    signal palette_mode        : std_logic_vector(1 downto 0);
+    signal screen_mode_req     : std_logic_vector(1 downto 0) := (others => '0');
+    signal palette_req         : std_logic_vector(1 downto 0) := (others => '0');
+    
+    signal old_toggle          : std_logic := '0';
+    signal old_pal_toggle      : std_logic := '0';
+    
+    signal color_palette       : std_logic_vector(1 downto 0) := (others => '0');
 
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -226,8 +238,14 @@ architecture synthesis of main is
     constant C_MENU_BW             : natural := 42;
     constant C_MENU_GREEN          : natural := 43;
     constant C_MENU_AMBER          : natural := 44;
-    constant C_MENU_CPU_65C02      : natural := 48;
-    
+    constant C_MENU_CPU_65C02      : natural := 46;
+    constant C_MENU_ROMSWITCH      : natural := 47;
+    constant C_MENU_PALMODE        : natural := 48;
+    constant C_MENU_NTSC           : natural := 50;
+    constant C_MENU_2GS            : natural := 51;
+    constant C_MENU_AppleWin       : natural := 52;
+    constant C_MENU_2CPAL          : natural := 53;
+ 
 
 begin
    
@@ -249,8 +267,32 @@ begin
    -- write protect
    fd1_wp <= '1' when osm_control_i(C_MENU_FD_A) else '0';
    fd2_wp <= '1' when osm_control_i(C_MENU_FD_B) else '0';
-
    
+   -- misc toggles
+   romswitch <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
+   palmode   <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
+   
+   process(clk_main_i)
+    begin
+       if rising_edge(clk_main_i) then
+    
+          old_toggle     <= video_toggle_o;
+          old_pal_toggle <= palette_toggle_o;
+    
+          -- Display change request from keyboard
+          if video_toggle_o /= old_toggle then
+             screen_mode_req <= std_logic_vector(unsigned(screen_mode) + 1);
+          end if;
+    
+          -- Palette change request from keyboard
+          if palette_toggle_o /= old_pal_toggle then
+             palette_req     <= std_logic_vector(unsigned(palette_mode) + 1);
+             screen_mode_req <= "00";  -- force colour when switching palettes
+          end if;
+    
+       end if;
+    end process;
+    
    screen_mode_proc : process(clk_main_i)
    begin
     -- 00: Color, 01: B&W, 10:Green, 11: Amber
@@ -263,6 +305,23 @@ begin
     elsif osm_control_i(C_MENU_AMBER) then 
         screen_mode <= "11";
     end if;
+   end process;
+   
+   -- 00: Original (//e NTSC), 01: //gs, 02: AppleWin, 03: //c PAL
+   colour_assignment_proc : process(all)
+   begin
+       color_palette <= "00"; -- default
+       
+       if osm_control_i(C_MENU_NTSC) then
+         color_palette <= "00";
+       elsif osm_control_i(C_MENU_2GS) then
+         color_palette <= "01";
+       elsif osm_control_i(C_MENU_AppleWin) then
+         color_palette <= "10";
+       elsif osm_control_i(C_MENU_2CPAL) then
+         color_palette <= "11";
+       end if;
+       
    end process;
    
     slot_assignment_proc : process(all)
@@ -428,13 +487,13 @@ begin
         r               => video_red_o,
         g               => video_green_o,
         b               => video_blue_o,
-        video_switch    => video_toggle,
-        palette_switch  => palette_toggle,
-        screen_mode     => screen_mode, -- 00: Color, 01: B&W, 10:Green, 11: Amber
-        text_color      => '0', -- text_color,
-        color_palette   => "00", -- Original NTSC
-        palmode         => '0', -- Disabled
-        romswitch       => '1', -- bottom toggle switch on apple ii US/UK keyboard
+        video_switch    => video_toggle_o,
+        palette_switch  => palette_toggle_o,
+        screen_mode     => screen_mode,         -- 00: Color, 01: B&W, 10:Green, 11: Amber
+        text_color      => '0',                 -- text_color,
+        color_palette   => color_palette,       -- 00: Original (//e NTSC), 01: //gs, 02: AppleWin, 03: //c PAL
+        palmode         => palmode,
+        romswitch       => romswitch,   -- bottom toggle switch on apple ii US/UK keyboard
         audio_l         => audio_l,
         audio_r         => audio_r,
         tape_in         => tape_adc_act and tape_adc,
@@ -506,10 +565,10 @@ begin
 	    mouse_button   =>  '0',
 	    mouse_strobe   =>  '0',
 
-	    mouse_4_inslot  => slot4_mouse,        -- enable mouse active low
-	    mouse_5_inslot  => slot5_mouse,        -- enable mouse active low
-	    mb_4_inslot     => slot4_mockingboard, -- enable mockingboard active low
-	    mb_5_inslot     => slot5_mockingboard, -- enable mockingboard active low
+	    mouse_4_inslot  => slot4_mouse,        -- enable mouse
+	    mouse_5_inslot  => slot5_mouse,        -- enable mouse
+	    mb_4_inslot     => slot4_mockingboard, -- enable mockingboard
+	    mb_5_inslot     => slot5_mockingboard, -- enable mockingboard
 	    saturn_5_inslot => slot5_saturn5
         
    );

@@ -210,8 +210,13 @@ constant C_MENU_COLOR          : natural := 41;
 constant C_MENU_BW             : natural := 42;
 constant C_MENU_GREEN          : natural := 43;
 constant C_MENU_AMBER          : natural := 44;
-constant C_MENU_CPU_65C02      : natural := 48;
-
+constant C_MENU_CPU_65C02      : natural := 46;
+constant C_MENU_ROMSWITCH      : natural := 47;
+constant C_MENU_PALMODE        : natural := 48;
+constant C_MENU_NTSC           : natural := 50;
+constant C_MENU_2GS            : natural := 51;
+constant C_MENU_AppleWin       : natural := 52;
+constant C_MENU_2CPAL          : natural := 53;
 
 end package globals;
 
