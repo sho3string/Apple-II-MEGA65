@@ -217,6 +217,7 @@ constant C_MENU_NTSC           : natural := 50;
 constant C_MENU_2GS            : natural := 51;
 constant C_MENU_AppleWin       : natural := 52;
 constant C_MENU_2CPAL          : natural := 53;
+constant C_MENU_LRT            : natural := 56;
 
 end package globals;
 
