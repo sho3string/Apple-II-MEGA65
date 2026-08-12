@@ -214,7 +214,15 @@ architecture synthesis of main is
     signal old_pal_toggle      : std_logic := '0';
     
     signal color_palette       : std_logic_vector(1 downto 0) := (others => '0');
-
+    
+    signal apple_joy    : std_logic_vector(5 downto 0)  := (others => '0');
+    signal apple_joy_an : std_logic_vector(15 downto 0) := (others => '0');
+    
+    signal pot1_val        : std_logic_vector(7 downto 0);
+    signal potxy_sw        : std_logic;
+    signal pot_pol_sw      : std_logic;
+    signal joy2_button     : std_logic;
+    
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
     constant C_MENU_NO_4           : integer := 11;
@@ -245,7 +253,10 @@ architecture synthesis of main is
     constant C_MENU_2GS            : natural := 51;
     constant C_MENU_AppleWin       : natural := 52;
     constant C_MENU_2CPAL          : natural := 53;
- 
+    constant C_MENU_LRT            : natural := 56;
+    
+    --constant C_MENU_POTXY  : natural := <your bit>; to do
+    --constant C_MENU_POTPOL : natural := <your bit>; to do
 
 begin
    
@@ -271,6 +282,74 @@ begin
    -- misc toggles
    romswitch <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
    palmode   <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
+   
+   second_button_proc : process(all)
+    begin
+       -- Select which MEGA65 POT line carries button 2.
+       -- 0 = POTX
+       -- 1 = POTY
+       --if potxy_sw = '0' then
+          pot1_val <= pot1_x_i;
+       --else
+        --  pot1_val <= pot1_y_i;
+       --end if;
+    
+       -- Convert POT level into active-high Apple II PB2.
+       --
+       -- Different joystick adapters use opposite POT polarities.
+       --if pot_pol_sw = '1' then
+          -- Active-low POT button, e.g. Amiga-style
+          if unsigned(pot1_val) < unsigned'(x"80") then
+             joy2_button <= '1';
+          else
+             joy2_button <= '0';
+          end if;
+       /*else
+          -- Active-high POT button, e.g. C64GS-style
+          if unsigned(pot1_val) >= unsigned'(x"80") then
+             joy2_button <= '1';
+          else
+             joy2_button <= '0';
+          end if;
+       end if;*/
+    end process;
+   
+   joystick_proc : process(all)
+    begin
+       -- Centre
+       apple_joy_an <= x"0000";
+       apple_joy    <= (others => '0');
+    
+       ------------------------------------------------------------
+       -- MEGA65 joystick 1 -> Apple II joystick X/Y
+       --
+       -- MEGA65 inputs are active LOW.
+       -- Apple joy_an is signed:
+       --   negative = left/up
+       --   zero     = centre
+       --   positive = right/down
+       ------------------------------------------------------------
+    
+       -- X axis
+       if joy_1_left_n_i = '0' then
+          apple_joy_an(15 downto 8) <= x"80";  -- -128
+       elsif joy_1_right_n_i = '0' then
+          apple_joy_an(15 downto 8) <= x"7F";  -- +127
+       end if;
+    
+       -- Y axis
+       if joy_1_up_n_i = '0' then
+          apple_joy_an(7 downto 0) <= x"80";   -- -128
+       elsif joy_1_down_n_i = '0' then
+          apple_joy_an(7 downto 0) <= x"7F";   -- +127
+       end if;
+    
+       -- Apple game-port pushbutton 1
+       apple_joy(4) <= not joy_1_fire_n_i;
+       
+       -- MEGA65 POTX/POTY second button -> Apple PB2
+        apple_joy(5) <= joy2_button;
+    end process;
    
    process(clk_main_i)
     begin
@@ -409,13 +488,17 @@ begin
         end if;
     end process;
 
-
-   process(clk_main_i) begin	
-        --flag to enable Lo-Res text artifacting, only applicable in screen mode 2'b00
-        if rising_edge(clk_main_i) then
-           text_color <= '1'; --(~status[20] & ~status[19] & status[21]);
-        end if;
-   end process; 
+  process(clk_main_i)
+    begin
+       if rising_edge(clk_main_i) then
+          -- Enable Lo-Res text artifacting only in Color mode
+          if screen_mode = "00" and osm_control_i(C_MENU_LRT) = '1' then
+             text_color <= '1';
+          else
+             text_color <= '0';
+          end if;
+       end if;
+    end process;
    
     -- RAM0 Process: Handles lower byte when ram_aux = '0'
     i_ram0: process(clk_main_i)
@@ -490,7 +573,7 @@ begin
         video_switch    => video_toggle_o,
         palette_switch  => palette_toggle_o,
         screen_mode     => screen_mode,         -- 00: Color, 01: B&W, 10:Green, 11: Amber
-        text_color      => '0',                 -- text_color,
+        text_color      => text_color,                 -- text_color,
         color_palette   => color_palette,       -- 00: Original (//e NTSC), 01: //gs, 02: AppleWin, 03: //c PAL
         palmode         => palmode,
         romswitch       => romswitch,   -- bottom toggle switch on apple ii US/UK keyboard
@@ -500,8 +583,8 @@ begin
         
         ps2_key         => ps2_key,
         mega65_caps     => not keyboard_n(m65_capslock),
-        joy             => "000000", -- to do
-        joy_an          => "0000000000000000", -- to do
+        joy             => apple_joy,
+        joy_an          => apple_joy_an,
 
         TRACK1          => TRACK1,
 	    TRACK1_ADDR     => TRACK1_RAM_ADDR,
