@@ -215,13 +215,21 @@ architecture synthesis of main is
     
     signal color_palette       : std_logic_vector(1 downto 0) := (others => '0');
     
-    signal apple_joy    : std_logic_vector(5 downto 0)  := (others => '0');
-    signal apple_joy_an : std_logic_vector(15 downto 0) := (others => '0');
+    signal apple_joy           : std_logic_vector(5 downto 0)  := (others => '0');
+    signal apple_joy_an        : std_logic_vector(15 downto 0) := (others => '0');
     
-    signal pot1_val        : std_logic_vector(7 downto 0);
-    signal potxy_sw        : std_logic;
-    signal pot_pol_sw      : std_logic;
-    signal joy2_button     : std_logic;
+    signal pot1_val            : std_logic_vector(7 downto 0);
+    signal potxy_sw            : std_logic;
+    signal pot_pol_sw          : std_logic;
+    signal joy2_button         : std_logic;
+    
+    signal mouse_x_m65         : signed(8 downto 0) := (others => '0');
+    signal mouse_y_m65         : signed(8 downto 0) := (others => '0');
+    signal mouse_strobe_m65    : std_logic := '0';
+    signal mouse_button_m65    : std_logic := '0';
+    
+    signal mouse_x_old         : std_logic_vector(1 downto 0) := "00";
+    signal mouse_y_old         : std_logic_vector(1 downto 0) := "00";
     
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -283,13 +291,95 @@ begin
    romswitch <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
    palmode   <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
    
+   
+   -- quadrature-to-delta converter between MEGA65 port 2 and apple2_top
+    mouse_proc : process(clk_main_i)
+        variable mouse_x_new : std_logic_vector(1 downto 0);
+        variable mouse_y_new : std_logic_vector(1 downto 0);
+        variable dx          : integer range -1 to 1;
+        variable dy          : integer range -1 to 1;
+    
+    begin
+       if rising_edge(clk_main_i) then
+    
+          mouse_strobe_m65 <= '0';
+          mouse_x_m65      <= (others => '0');
+          mouse_y_m65      <= (others => '0');
+    
+          -- Amiga-style quadrature mouse on MEGA65 port 2
+          -- Amiga mouse DB9 quadrature:
+          -- pin 1 / UP    = V
+          -- pin 2 / DOWN  = H
+          -- pin 3 / LEFT  = VQ
+          -- pin 4 / RIGHT = HQ
+            
+          mouse_x_new := joy_2_down_n_i & joy_2_right_n_i; -- H/HQ
+          mouse_y_new := joy_2_up_n_i   & joy_2_left_n_i;  -- V/VQ
+    
+          dx := 0;
+          dy := 0;
+    
+          ------------------------------------------------------------------
+          -- X quadrature
+          --
+          -- Valid sequence one direction:
+          --   00 -> 01 -> 11 -> 10 -> 00
+          --
+          -- Reverse sequence = opposite direction.
+          ------------------------------------------------------------------
+    
+          case mouse_x_old & mouse_x_new is
+             when "0001" | "0111" | "1110" | "1000" =>
+                dx := -1;
+             when "0010" | "1011" | "1101" | "0100" =>
+                dx := 1;
+             when others =>
+                dx := 0;
+          end case;
+
+          ------------------------------------------------------------------
+          -- Y quadrature
+          ------------------------------------------------------------------
+    
+          case mouse_y_old & mouse_y_new is
+             when "0001" | "0111" | "1110" | "1000" =>
+                dy := 1;
+             when "0010" | "1011" | "1101" | "0100" =>
+                dy := -1;
+             when others =>
+                dy := 0;
+          end case;
+
+          ------------------------------------------------------------------
+          -- Generate one Apple mouse event for each quadrature transition.
+          ------------------------------------------------------------------
+    
+          if dx /= 0 or dy /= 0 then
+             mouse_x_m65      <= to_signed(dx, 9);
+             mouse_y_m65      <= to_signed(dy, 9);
+             mouse_strobe_m65 <= '1';
+          end if;
+    
+    
+          mouse_x_old <= mouse_x_new;
+          mouse_y_old <= mouse_y_new;
+    
+          ------------------------------------------------------------------
+          -- Amiga left mouse button is the normal DB9 fire pin.
+          -- Apple mouse BUTTON is active high.
+          ------------------------------------------------------------------
+    
+          mouse_button_m65 <= not joy_2_fire_n_i;
+       end if;
+    end process;
+   
    second_button_proc : process(all)
     begin
        -- Select which MEGA65 POT line carries button 2.
        -- 0 = POTX
        -- 1 = POTY
        --if potxy_sw = '0' then
-          pot1_val <= pot1_x_i;
+          pot1_val <= pot1_x_i; -- hard wired to potx for now
        --else
         --  pot1_val <= pot1_y_i;
        --end if;
@@ -299,7 +389,7 @@ begin
        -- Different joystick adapters use opposite POT polarities.
        --if pot_pol_sw = '1' then
           -- Active-low POT button, e.g. Amiga-style
-          if unsigned(pot1_val) < unsigned'(x"80") then
+          if unsigned(pot1_val) < unsigned'(x"80") then -- hard wired to Amiga style for now
              joy2_button <= '1';
           else
              joy2_button <= '0';
@@ -372,7 +462,7 @@ begin
        end if;
     end process;
     
-   screen_mode_proc : process(clk_main_i)
+   screen_mode_proc : process(all)
    begin
     -- 00: Color, 01: B&W, 10:Green, 11: Amber
     if osm_control_i(C_MENU_COLOR) then 
@@ -641,12 +731,10 @@ begin
 	    UART_DSR        => UART_DSR,
 	    RTC             => RTC,
 	    
-	    -- to do
-	    mouse_x         => "000000000", --({ps2_mouse[4],ps2_mouse[15:8]}),
-	    mouse_y         => "000000000", --({ps2_mouse[5],ps2_mouse[23:16]}),
-	   
-	    mouse_button   =>  '0',
-	    mouse_strobe   =>  '0',
+	    mouse_x       => mouse_x_m65,
+        mouse_y       => mouse_y_m65,
+        mouse_button  => mouse_button_m65,
+        mouse_strobe  => mouse_strobe_m65,
 
 	    mouse_4_inslot  => slot4_mouse,        -- enable mouse
 	    mouse_5_inslot  => slot5_mouse,        -- enable mouse
