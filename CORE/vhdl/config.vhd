@@ -175,7 +175,7 @@ constant SEL_CFG_FILE      : std_logic_vector(15 downto 0) := x"0101";
 
 -- START YOUR CONFIGURATION BELOW THIS LINE
 
-constant DIR_START         : string := "/appl2e";
+constant DIR_START         : string := "/apple2e";
 constant CFG_FILE          : string := "/apple2e/a2ecfg";
 
 --------------------------------------------------------------------------------------------------------------------
@@ -316,38 +316,35 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 59;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 62;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
-constant OPTM_DX           : natural := 32;
+constant OPTM_DX           : natural := 25;
 constant OPTM_DY           : natural := 22;
 
 constant OPTM_ITEMS        : string :=
-   " Apple //e\n"           &
+   " Mega //e for MEGA65\n" &
    "\n"                     &
    " A:%s\n"                &
    " B:%s\n"                &
-   "   Write Protect\n"     &
+   " Write Protect\n"       &
    " Drive A\n"             &
    " Drive B\n"             &
    "\n"                     &
    " Back to main menu\n"   &
    "\n"                     &
-   " Slot 4\n"              &
-   " None\n"                &
-   " Mockingboard\n"        &
-   " Mouse\n"               &
-   "\n"                     &
-   " Back to main menu\n"   &
-   " Slot 5\n"              &
-   " None\n"                &
-   " Mockingboard\n"        &
-   " Mouse\n"               &
-   " Saturn 5\n"            &
+   " Expansion Slots\n"     &
+   " Slot4 - None\n"        &
+   " Slot4 - Mockingboard\n"&
+   " Slot4 - Mouse\n"       &
+   " Slot5 - None\n"        &
+   " Slot5 - Mockingboard\n"&
+   " Slot5 - Mouse\n"       &
+   " Slot5 - Saturn 5\n"    &
    "\n"                     &
    " Back to main menu\n"   &
    "\n"                     &
@@ -367,26 +364,32 @@ constant OPTM_ITEMS        : string :=
    " HDMI: Zoom-in\n"       &
    " Audio improvements\n"  &
    "\n"                     &
-   " Display\n"             &
+   " Display Settings\n"    &
    " Color\n"               &
    " B&W\n"                 &
    " Green\n"               &
    " Amber\n"               &
+   "\n"                     &
    " Back to main menu\n"   &
-   " 65C02\n"               &
-   " Video Rom : US|Local\n"&
-   " Analog out: NTSC|PAL\n"&
-   " Colour Palette\n"      &
-   " Original //e NTSC)\n"  &
-   " //gs\n"                &
+   " CPU Type: 65C02|6502\n"&
+   " Video Rom - US|Local\n"&
+   " Analog out- NTSC|PAL\n"&
+   " Palette Settings\n"    &
+   " Original //e (NTSC)\n" &
+   " ][gs\n"                &
    " AppleWin\n"            &
    " //c PAL\n"             &
-   " \n"                    &
+   "\n"                     &
    " Back to main menu\n"   &
    " Lo-Res Text\n"         &
-   " \n"                    &
+   " Joy Fire 2 Settings\n" &
+   " Map to POTX|POTY\n"    & -- default is off - Potx
+   " Invert Polarity\n"     & -- default is off
+   "\n"                     &
+   " Back to main menu\n"   &
+   "\n"                     &
    " Close Menu\n";
-   
+
 -- define your own constants here and choose meaningful names
 -- make sure that your first group uses the value 1 (0 means "no menu item", such as text and line),
 -- and be aware that you can only have a maximum of 254 groups (255 means "Close Menu");
@@ -408,6 +411,8 @@ constant OPTM_G_ROMSW      : integer := 13;
 constant OPTM_G_PALMODE    : integer := 14;
 constant OPTM_G_COLPAL     : integer := 15;
 constant OPTM_G_LRT        : integer := 16;
+constant OPTM_G_POTPOL     : integer := 17; 
+constant OPTM_G_POTXY      : integer := 18;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -415,28 +420,27 @@ type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC-
 -- define your menu groups: which menu items are belonging together to form a group?
 -- where are separator lines? which items should be selected by default?
 -- make sure that you have exactly the same amount of entries here than in OPTM_ITEMS and defined by OPTM_SIZE
+
+
 constant OPTM_GROUPS       : OPTM_GTYPE := ( 
     OPTM_G_HEADLINE,                          -- Headline "Demo Headline A"
     OPTM_G_LINE,                              -- Line
     OPTM_G_Drive_A + OPTM_G_MOUNT_DRV + OPTM_G_START,        -- Drive A
     OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,        -- Drive B
     OPTM_G_SUBMENU,                           -- "Write Protect"
-    OPTM_G_WP_A + OPTM_G_SINGLESEL,           -- Drive A wp toggle
-    OPTM_G_WP_B + OPTM_G_SINGLESEL,           -- Drive B wp toggle
+    OPTM_G_WP_A + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- Drive A wp toggle
+    OPTM_G_WP_B + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- Drive B wp toggle
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
     OPTM_G_LINE,                              -- Line
-    OPTM_G_SUBMENU,                           --"Slot 4"
-    OPTM_G_SL_4,                              -- None
-    OPTM_G_SL_4 + OPTM_G_STDSEL,              -- Mockingboard - default slot 4.
-    OPTM_G_SL_4,                              -- Mouse - default slot 5
-    OPTM_G_LINE,                              -- Line
-    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
-    OPTM_G_SUBMENU,                           --"Slot 5"
-    OPTM_G_SL_5,                              -- None
-    OPTM_G_SL_5,                              -- Mockingboard - default slot 5.
-    OPTM_G_SL_5 + OPTM_G_STDSEL,              -- Mouse - default slot 4
-    OPTM_G_SL_5,                              -- Saturn 5 - only in slot 5
+    OPTM_G_SUBMENU,                           --"Expansion Slots"
+    OPTM_G_SL_4,                              -- Slot 4 - None
+    OPTM_G_SL_4 + OPTM_G_STDSEL,              -- Slot 4 - Mockingboard - default slot 4.
+    OPTM_G_SL_4,                              -- Slot 4 - Mouse
+    OPTM_G_SL_5,                              -- Slot 5 - None
+    OPTM_G_SL_5,                              -- Slot 5 - Mockingboard - default slot 5.
+    OPTM_G_SL_5 + OPTM_G_STDSEL,              -- Slot 5 - Mouse - default slot 4
+    OPTM_G_SL_5,                              -- Slot 5 - Saturn 5 - only in slot 5
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
     OPTM_G_LINE,                              -- Line
@@ -456,11 +460,12 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_LINE,                              -- Line
-    OPTM_G_SUBMENU,                           --"Display"
+    OPTM_G_SUBMENU,                           --"Display Settings"
     OPTM_G_DISPLAY + OPTM_G_STDSEL,           -- Color
     OPTM_G_DISPLAY,                           -- Black & White
     OPTM_G_DISPLAY,                           -- Green
     OPTM_G_DISPLAY,                           -- Amber
+    OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
     OPTM_G_CPU + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- 65C02
     OPTM_G_ROMSW + OPTM_G_SINGLESEL + OPTM_G_STDSEL,-- Rom switch
@@ -473,6 +478,11 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
     OPTM_G_LRT + OPTM_G_SINGLESEL,            -- Low-res text
+    OPTM_G_SUBMENU,                           --"Joystick Settings"
+    OPTM_G_POTPOL + OPTM_G_SINGLESEL,         -- Potxy flip
+    OPTM_G_POTXY + OPTM_G_SINGLESEL,          -- Potx/Poty polarity         
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE                              -- Close Menu
 );
