@@ -230,42 +230,42 @@ architecture synthesis of main is
     
     signal mouse_x_old         : std_logic_vector(1 downto 0) := "00";
     signal mouse_y_old         : std_logic_vector(1 downto 0) := "00";
-    
+   
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
     constant C_MENU_NO_4           : integer := 11;
     constant C_MENU_MB_4           : integer := 12;
     constant C_MENU_MO_4           : integer := 13;
-    constant C_MENU_NO_5           : integer := 17;
-    constant C_MENU_MB_5           : integer := 18;
-    constant C_MENU_MO_5           : integer := 19;
-    constant C_MENU_SN_5           : integer := 20;
-    constant C_MENU_HDMI_16_9_50   : natural := 27;
-    constant C_MENU_HDMI_16_9_60   : natural := 28;
-    constant C_MENU_HDMI_4_3_50    : natural := 29;
-    constant C_MENU_HDMI_5_4_50    : natural := 30;
-    constant C_MENU_HDMI_640_60    : natural := 31;
-    constant C_MENU_HDMI_720_5994  : natural := 32;
-    constant C_MENU_SVGA_800_60    : natural := 33;
-    constant C_MENU_CRT_EMULATION  : natural := 36;
-    constant C_MENU_HDMI_ZOOM      : natural := 37;
-    constant C_MENU_IMPROVE_AUDIO  : natural := 38;
-    constant C_MENU_COLOR          : natural := 41;
-    constant C_MENU_BW             : natural := 42;
-    constant C_MENU_GREEN          : natural := 43;
-    constant C_MENU_AMBER          : natural := 44;
-    constant C_MENU_CPU_65C02      : natural := 46;
-    constant C_MENU_ROMSWITCH      : natural := 47;
-    constant C_MENU_PALMODE        : natural := 48;
-    constant C_MENU_NTSC           : natural := 50;
-    constant C_MENU_2GS            : natural := 51;
-    constant C_MENU_AppleWin       : natural := 52;
-    constant C_MENU_2CPAL          : natural := 53;
-    constant C_MENU_LRT            : natural := 56;
+    constant C_MENU_NO_5           : integer := 14;
+    constant C_MENU_MB_5           : integer := 15;
+    constant C_MENU_MO_5           : integer := 16;
+    constant C_MENU_SN_5           : integer := 17;
+    constant C_MENU_HDMI_16_9_50   : natural := 24;
+    constant C_MENU_HDMI_16_9_60   : natural := 25;
+    constant C_MENU_HDMI_4_3_50    : natural := 26;
+    constant C_MENU_HDMI_5_4_50    : natural := 27;
+    constant C_MENU_HDMI_640_60    : natural := 28;
+    constant C_MENU_HDMI_720_5994  : natural := 29;
+    constant C_MENU_SVGA_800_60    : natural := 30;
+    constant C_MENU_CRT_EMULATION  : natural := 33;
+    constant C_MENU_HDMI_ZOOM      : natural := 34;
+    constant C_MENU_IMPROVE_AUDIO  : natural := 35;
+    constant C_MENU_COLOR          : natural := 38;
+    constant C_MENU_BW             : natural := 39;
+    constant C_MENU_GREEN          : natural := 40;
+    constant C_MENU_AMBER          : natural := 41;
+    constant C_MENU_CPU_65C02      : natural := 44;
+    constant C_MENU_ROMSWITCH      : natural := 45;
+    constant C_MENU_PALMODE        : natural := 46;
+    constant C_MENU_NTSC           : natural := 48;
+    constant C_MENU_2GS            : natural := 49;
+    constant C_MENU_AppleWin       : natural := 50;
+    constant C_MENU_2CPAL          : natural := 51;
+    constant C_MENU_LRT            : natural := 54;
+    constant C_MENU_POTXY          : natural := 56;
+    constant C_MENU_POTPOL         : natural := 57;
     
-    --constant C_MENU_POTXY  : natural := <your bit>; to do
-    --constant C_MENU_POTPOL : natural := <your bit>; to do
-
+    
 begin
    
    
@@ -291,6 +291,8 @@ begin
    romswitch <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
    palmode   <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
    
+   pot_pol_sw <= osm_control_i(C_MENU_POTPOL);
+   potxy_sw   <= osm_control_i(C_MENU_POTXY);
    
    -- quadrature-to-delta converter between MEGA65 port 2 and apple2_top
     mouse_proc : process(clk_main_i)
@@ -378,30 +380,30 @@ begin
        -- Select which MEGA65 POT line carries button 2.
        -- 0 = POTX
        -- 1 = POTY
-       --if potxy_sw = '0' then
+       if potxy_sw = '0' then
           pot1_val <= pot1_x_i; -- hard wired to potx for now
-       --else
-        --  pot1_val <= pot1_y_i;
-       --end if;
+       else
+          pot1_val <= pot1_y_i;
+       end if;
     
        -- Convert POT level into active-high Apple II PB2.
        --
        -- Different joystick adapters use opposite POT polarities.
-       --if pot_pol_sw = '1' then
+       if pot_pol_sw = '1' then
           -- Active-low POT button, e.g. Amiga-style
           if unsigned(pot1_val) < unsigned'(x"80") then -- hard wired to Amiga style for now
              joy2_button <= '1';
           else
              joy2_button <= '0';
           end if;
-       /*else
+       else
           -- Active-high POT button, e.g. C64GS-style
           if unsigned(pot1_val) >= unsigned'(x"80") then
              joy2_button <= '1';
           else
              joy2_button <= '0';
           end if;
-       end if;*/
+       end if;
     end process;
    
    joystick_proc : process(all)
@@ -751,17 +753,17 @@ begin
       )
       port map
       (
-         clk_qnice_i       => apple_qnice_clk_i,
-         clk_core_i        => clk_main_i,
-         reset_core_i      => not reset_core_n,
+         clk_qnice_i              => apple_qnice_clk_i,
+         clk_core_i               => clk_main_i,
+         reset_core_i             => not reset_core_n,
 
          -- Core clock domain
-         img_mounted_o     => img_mounted,
-         img_readonly_o    => img_readonly,
-         img_size_o        => img_size,
-         img_type_o        => img_type,
-         drive_mounted_o   => vdrives_mounted,
-         disk_change_o     => disk_change,
+         img_mounted_o            => img_mounted,
+         img_readonly_o           => img_readonly,
+         img_size_o               => img_size,
+         img_type_o               => img_type,
+         drive_mounted_o          => vdrives_mounted,
+         img_mounted_toggle_o     => disk_change,
          -- Cache output signals: The dirty flags can be used to enforce data consistency
          -- (for example by ignoring/delaying a reset or delaying a drive unmount/mount, etc.)
          -- The flushing flags can be used to signal the fact that the caches are currently
