@@ -533,10 +533,10 @@ begin
          joy_2_right_n        => joy_2_right_n_i,
          joy_2_fire_n         => joy_2_fire_n_i,
 
-         dbnce_joy2_up_n      => main_joy2_up_n_o,
-         dbnce_joy2_down_n    => main_joy2_down_n_o,
-         dbnce_joy2_left_n    => main_joy2_left_n_o,
-         dbnce_joy2_right_n   => main_joy2_right_n_o,
+         raw_joy2_up_n        => main_joy2_up_n_o,
+         raw_joy2_down_n      => main_joy2_down_n_o,
+         raw_joy2_left_n      => main_joy2_left_n_o,
+         raw_joy2_right_n     => main_joy2_right_n_o,
          dbnce_joy2_fire_n    => main_joy2_fire_n_o
       ); -- i_joy_debouncer
 
