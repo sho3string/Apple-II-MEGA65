@@ -324,7 +324,7 @@ constant OPTM_SIZE         : natural := 62;  -- amount of items including empty 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 25;
-constant OPTM_DY           : natural := 22;
+constant OPTM_DY           : natural := 23;
 
 constant OPTM_ITEMS        : string :=
    " Mega //e for MEGA65\n" &
@@ -349,7 +349,6 @@ constant OPTM_ITEMS        : string :=
    " Back to main menu\n"   &
    "\n"                     &
    " HDMI: %s\n"            &    -- HDMI submenu
-   " HDMI Settings\n"       &
    "\n"                     &
    " 720p 50 Hz 16:9\n"     &
    " 720p 60 Hz 16:9\n"     &
@@ -387,6 +386,7 @@ constant OPTM_ITEMS        : string :=
    " Invert Polarity\n"     & -- default is off
    "\n"                     &
    " Back to main menu\n"   &
+   " MEGA65 KB Mapping\n"   & -- default is on
    "\n"                     &
    " Close Menu\n";
 
@@ -413,6 +413,7 @@ constant OPTM_G_COLPAL     : integer := 15;
 constant OPTM_G_LRT        : integer := 16;
 constant OPTM_G_POTPOL     : integer := 17; 
 constant OPTM_G_POTXY      : integer := 18;
+constant OPTM_G_KBMD       : integer := 19;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -445,7 +446,6 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
     OPTM_G_LINE,                              -- Line
     OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
-    OPTM_G_HEADLINE,                          -- Headline "HDMI Settings"
     OPTM_G_LINE,                              -- Line
     OPTM_G_HDMI + OPTM_G_STDSEL,              -- 720p 50 Hz 16:9, selected by default
     OPTM_G_HDMI,                              -- 720p 60 Hz 16:9
@@ -480,10 +480,11 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_LRT + OPTM_G_SINGLESEL,            -- Low-res text
     OPTM_G_SUBMENU,                           --"Joystick Settings"
     OPTM_G_POTPOL + OPTM_G_SINGLESEL,         -- Potxy flip
-    OPTM_G_POTXY + OPTM_G_SINGLESEL,          -- Potx/Poty polarity         
+    OPTM_G_POTXY + OPTM_G_SINGLESEL,          -- Potx/Poty polarity 
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
-    OPTM_G_LINE,                              -- Line
+    OPTM_G_KBMD + OPTM_G_SINGLESEL + OPTM_G_STDSEL,           -- MEGA65 KB mapping   
+    OPTM_G_LINE,                              -- Line   
     OPTM_G_CLOSE                              -- Close Menu
 );
 

@@ -1,353 +1,785 @@
 -------------------------------------------------------------------------------
 --
 -- PS/2 Keyboard interface for the Apple //e
+--
 -- Szombathelyi György
 --
 -- Based on
 -- PS/2 Keyboard interface for the Apple ][
 --
 -- Stephen A. Edwards, sedwards@cs.columbia.edu
+--
 -- After an original by Alex Freed
 --
 -------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
-entity keyboard_apple is
 
-  port (
-    CLK_14M  : in std_logic;
-    PS2_Key  : in std_logic_vector(10 downto 0);  -- From PS/2 port
-    mega65_caps : in std_logic;         -- track caps lock key from mega65
-    reads    : in std_logic;            -- Read strobe
-    reset    : in std_logic;
-    akd      : buffer std_logic;        -- Any key down
-    K        : out unsigned(7 downto 0); -- Latched, decoded keyboard data
-    open_apple:    out std_logic;
-    closed_apple:  out std_logic;
-    soft_reset:    out std_logic := '0';
-  	video_toggle:  out std_logic := '0';	  -- signal to control change of video modes
-    palette_toggle:out std_logic := '0'	  -- signal to control change of paleetes
-	);
+entity keyboard_apple is
+   port (
+      CLK_14M        : in  std_logic;
+
+      PS2_Key        : in  std_logic_vector(10 downto 0);
+
+      mega65_caps    : in  std_logic;
+
+      -- '0' = original Apple positional mapping
+      -- '1' = MEGA65 glyph-oriented mapping
+      mega65_layout_i : in std_logic;
+
+      reads          : in  std_logic;
+      reset          : in  std_logic;
+
+      akd            : buffer std_logic;
+      K              : out unsigned(7 downto 0);
+
+      open_apple     : out std_logic;
+      closed_apple   : out std_logic;
+
+      soft_reset     : out std_logic := '0';
+
+      video_toggle   : out std_logic := '0';
+      palette_toggle : out std_logic := '0'
+   );
 end keyboard_apple;
+
 
 architecture rtl of keyboard_apple is
 
-  signal q_signal           : std_logic_vector(7 downto 0); -- Intermediate signal
-  signal rom_addr           : std_logic_vector(10 downto 0);
-  signal rom_out            : unsigned(7 downto 0);
-  signal junction_code      : std_logic_vector(7 downto 0);
-  signal code, latched_code : unsigned(7 downto 0);
-  signal ext, latched_ext   : std_logic;
 
-  signal key_pressed        : std_logic;  -- Key pressed & not read
-  signal ctrl,shift,caplock : std_logic;
-  signal old_stb            : std_logic;
-  signal rep_timer          : unsigned(22 downto 0);
+   ---------------------------------------------------------------------------
+   -- Keyboard ROM
+   ---------------------------------------------------------------------------
 
-  -- Special PS/2 keyboard codes
-  constant LEFT_SHIFT       : unsigned(7 downto 0) := X"12";
-  constant RIGHT_SHIFT      : unsigned(7 downto 0) := X"59";
-  constant LEFT_CTRL        : unsigned(7 downto 0) := X"14";
-  constant CAPS_LOCK        : unsigned(7 downto 0) := X"58";
-  constant WINDOWS          : unsigned(7 downto 0) := X"1F";
-  constant ALT              : unsigned(7 downto 0) := X"11";
-  constant F13              : unsigned(7 downto 0) := X"06"; -- use mega65s F13 key as reset key
-  constant F8               : unsigned(7 downto 0) := X"0A";
-  constant F9               : unsigned(7 downto 0) := X"01";
-	
-  type states is (IDLE,
-                  HAVE_CODE,
-                  DECODE,
-                  GOT_KEY_UP_CODE,
-                  GOT_KEY_UP2,
-                  KEY_UP,
-                  NORMAL_KEY,
-                  KEY_READY1,
-                  KEY_READY
-                  );
+   signal q_signal      : std_logic_vector(7 downto 0);
+   signal rom_addr      : std_logic_vector(10 downto 0);
+   signal rom_out       : unsigned(7 downto 0);
 
-  signal state, next_state : states;
+
+   ---------------------------------------------------------------------------
+   -- Key decoding
+   ---------------------------------------------------------------------------
+
+   signal junction_code : std_logic_vector(7 downto 0);
+
+   signal code          : unsigned(7 downto 0);
+   signal latched_code  : unsigned(7 downto 0);
+
+   signal ext           : std_logic;
+   signal latched_ext   : std_logic;
+
+
+   ---------------------------------------------------------------------------
+   -- MEGA65 glyph translation
+   ---------------------------------------------------------------------------
+
+   signal effective_shift    : std_logic;
+   signal force_shift        : std_logic;
+   signal force_unshift      : std_logic;
+
+   signal effective_junction : std_logic_vector(7 downto 0);
+   signal suppress_key       : std_logic;
+
+
+   ---------------------------------------------------------------------------
+   -- Keyboard state
+   ---------------------------------------------------------------------------
+
+   signal key_pressed : std_logic;
+
+   signal ctrl        : std_logic;
+   signal shift       : std_logic;
+   signal caplock     : std_logic;
+
+   signal old_stb     : std_logic;
+
+   signal rep_timer   : unsigned(22 downto 0);
+
+
+   ---------------------------------------------------------------------------
+   -- Special PS/2 keyboard codes
+   ---------------------------------------------------------------------------
+
+   constant LEFT_SHIFT  : unsigned(7 downto 0) := x"12";
+   constant RIGHT_SHIFT : unsigned(7 downto 0) := x"59";
+   constant LEFT_CTRL   : unsigned(7 downto 0) := x"14";
+   constant CAPS_LOCK   : unsigned(7 downto 0) := x"58";
+
+   constant WINDOWS     : unsigned(7 downto 0) := x"1F";
+   constant ALT         : unsigned(7 downto 0) := x"11";
+
+   constant F13         : unsigned(7 downto 0) := x"06";
+   constant F8          : unsigned(7 downto 0) := x"0A";
+   constant F9          : unsigned(7 downto 0) := x"01";
+
+
+   ---------------------------------------------------------------------------
+   -- State machine
+   ---------------------------------------------------------------------------
+
+   type states is (
+      IDLE,
+      HAVE_CODE,
+      DECODE,
+      GOT_KEY_UP_CODE,
+      GOT_KEY_UP2,
+      KEY_UP,
+      NORMAL_KEY,
+      KEY_READY1,
+      KEY_READY
+   );
+
+   signal state      : states;
+   signal next_state : states;
+
 
 begin
 
-  rom_out <= unsigned(q_signal);
-  
-  /*
-  keyboard_rom : entity work.spram
-  generic map (11,8,"../../CORE/Apple-II_MiSTer/rtl/roms/keyboard.mif")
-  port map (
-   address => std_logic_vector(rom_addr),
-   clock => CLK_14M,
-   data => (others=>'0'),
-   wren => '0',
-   --unsigned(q) => rom_out);
-   q => q_signal);*/
-   
-  keyboard_rom : entity work.dualport_2clk_ram
-    generic map 
-    (
-        ADDR_WIDTH   => 11,
-        DATA_WIDTH   => 8,
-        ROM_PRELOAD  => true,
-        ROM_FILE     => "../../CORE/Apple-II_MiSTer-master/rtl/roms/keyboard.hex",
-        ROM_FILE_HEX => true
-    )
-    port map
-    (
-        clock_a   => CLK_14M,
-        wren_a    => '0',
-        address_a => std_logic_vector(rom_addr),
-        data_a    => (others=>'0'),
+
+   ---------------------------------------------------------------------------
+   -- Keyboard ROM output
+   ---------------------------------------------------------------------------
+
+   rom_out <= unsigned(q_signal);
+
+
+   ---------------------------------------------------------------------------
+   -- MEGA65 private pseudo scan codes
+   --
+   -- These pseudo codes are generated by keyboard_adapter and are not real
+   -- PS/2 scan codes.
+   --
+   -- F0 = :
+   -- F1 = @
+   -- F2 = *
+   -- F3 = +
+   -- F4 = "
+   -- F5 = &
+   -- F6 = '
+   -- F7 = (
+   -- F8 = )
+   -- F9 = #
+   -- FA = no-op
+   -- FB = ;
+   ---------------------------------------------------------------------------
+
+   force_shift <= '1' when
+       latched_code = x"F1" or  -- @
+       latched_code = x"F2" or  -- *
+       latched_code = x"F3" or  -- +
+       latched_code = x"F4" or  -- "
+       latched_code = x"F5" or  -- &
+       latched_code = x"F7" or  -- (
+       latched_code = x"F8" or  -- )
+       latched_code = x"F9"     -- #
+    else '0';
+
+
+   force_unshift <= '1' when
+      latched_code = x"F6"      -- '
+   else '0';
+
+
+   ---------------------------------------------------------------------------
+   -- Effective shift state
+   --
+   -- Normally this simply follows the physical Shift state.
+   --
+   -- Pseudo codes can force Shift on/off for dedicated MEGA65 symbol keys.
+   --
+   -- Additionally, MEGA65 Shift+7 must generate a single quote. Since the
+   -- Apple quote matrix position produces " when shifted, Shift is suppressed
+   -- for that particular held key.
+   ---------------------------------------------------------------------------
+
+   effective_shift <=
+
+   -- MEGA65 :/[ key
+   '1' when latched_code = x"F0" and shift = '0' else
+   '0' when latched_code = x"F0" and shift = '1' else
+
+   -- MEGA65 ;/] key
+   '0' when latched_code = x"FB" else
+
+   -- MEGA65 Shift+7 = '
+   '0' when mega65_layout_i = '1' and
+            shift = '1' and
+            latched_code = x"3D" else
+
+   '0' when force_unshift = '1' else
+   '1' when force_shift = '1' else
+   shift;
+
+   ---------------------------------------------------------------------------
+   -- Dynamic MEGA65 shifted number-row translation
+   --
+   -- This is deliberately done HERE rather than in keyboard_adapter.
+   --
+   -- This means:
+   --
+   --    hold Shift, then press 6 -> &
+   --
+   -- and:
+   --
+   --    hold 6, then press Shift -> &
+   --
+   -- behave identically.
+   --
+   -- The currently-held key remains latched while Shift can change at any
+   -- time, so auto-repeat also changes to the correct glyph.
+   ---------------------------------------------------------------------------
+
+   mega65_shifted_keys : process(all)
+    begin
     
-        clock_b   => CLK_14M,
-        address_b => std_logic_vector(rom_addr),
-        data_b    => (others=>'0'),
-        q_b       => q_signal
-        --unsigned(q_b) => rom_out
-    );
+       effective_junction <= junction_code;
+       suppress_key       <= '0';
+    
+       ------------------------------------------------------------------------
+       -- Dedicated MEGA65 :/[ key
+       ------------------------------------------------------------------------
+       if latched_code = x"F0" then
+    
+          if shift = '1' then
+             effective_junction <= x"3A";  -- [
+          else
+             effective_junction <= x"1C";  -- :
+          end if;
+    
+    
+       ------------------------------------------------------------------------
+       -- Dedicated MEGA65 ;/] key
+       ------------------------------------------------------------------------
+       elsif latched_code = x"FB" then
+    
+          if shift = '1' then
+             effective_junction <= x"3B";  -- ]
+          else
+             effective_junction <= x"1C";  -- ;
+          end if;
+    
+    
+       ------------------------------------------------------------------------
+       -- Dedicated MEGA65 @/{ key
+       ------------------------------------------------------------------------
+       elsif latched_code = x"F1" then
+    
+          if shift = '1' then
+             effective_junction <= x"3A";  -- [ matrix -> { when shifted
+          else
+             effective_junction <= x"02";  -- 2 matrix -> @ when shifted
+          end if;
+    
+    
+       ------------------------------------------------------------------------
+       -- Dedicated MEGA65 */} key
+       ------------------------------------------------------------------------
+       elsif latched_code = x"F2" then
+    
+          if shift = '1' then
+             effective_junction <= x"3B";  -- ] matrix -> } when shifted
+          else
+             effective_junction <= x"08";  -- 8 matrix -> * when shifted
+          end if;
+    
+    
+       ------------------------------------------------------------------------
+       -- MEGA65 shifted number row
+       ------------------------------------------------------------------------
+       elsif mega65_layout_i = '1' and shift = '1' then
+    
+          case latched_code is
+             when x"1E" =>              -- 2
+                effective_junction <= x"45";  -- "
+             when x"36" =>              -- 6
+                effective_junction <= x"07";  -- &
+             when x"3D" =>              -- 7
+                effective_junction <= x"45";  -- '
+             when x"3E" =>              -- 8
+                effective_junction <= x"09";  -- (
+             when x"46" =>              -- 9
+                effective_junction <= x"30";  -- )
+             when x"45" =>              -- 0
+                suppress_key <= '1';
+             when others =>
+                null;
+    
+          end case;
+    
+       end if;
+    
+    end process mega65_shifted_keys;
 
-  K <= key_pressed & rom_out(6 downto 0);
 
-  caplock_ctrl : process (CLK_14M, reset)
-  begin
-    if reset = '1' then
-      caplock <= '0';
-    elsif rising_edge(CLK_14M) then
-      --if state = KEY_UP and code = CAPS_LOCK then
-      -- no need to track KEY_UP since this is done internally on the Mega65
-        caplock <= not mega65_caps;--not caplock;
-      --end if;
-    end if;
-  end process;
-  
-  
+   ---------------------------------------------------------------------------
+   -- Keyboard ROM
+   ---------------------------------------------------------------------------
 
-  shift_ctrl : process (CLK_14M, reset)
-  begin
-    if reset = '1' then
-      shift <= '0';
-      ctrl <= '0';
-      --open_apple<='0';
-      --closed_apple<='0';
-		soft_reset<='0';
-		video_toggle<='0';
-		palette_toggle<='0';
-    elsif rising_edge(CLK_14M) then
-     if state = HAVE_CODE then
-        if code = LEFT_SHIFT or code = RIGHT_SHIFT then
-          shift <= '1';
-        elsif code = LEFT_CTRL then
-          ctrl <= '1';
-        elsif code = WINDOWS then
-          open_apple <= '1';
-        elsif code = ALT then
-          closed_apple <= '1';
-        elsif code = F13 and ctrl = '1' then
-		    soft_reset <= '1';
-          --reset_key <= '1';
-	    elsif code = F8 then
-			palette_toggle <= '1';
-		elsif code = F9 then
-			video_toggle <= '1';
-        end if;
-      elsif state = KEY_UP then
-        if code = LEFT_SHIFT or code = RIGHT_SHIFT then
-          shift <= '0';
-        elsif code = LEFT_CTRL then
-          ctrl <= '0';
-        elsif code = WINDOWS then
-          open_apple <= '0';
-        elsif code = ALT then
-          closed_apple <= '0';
-        elsif code = F13 then
-          --reset_key <= '0';
-			 soft_reset <= '0';
-		elsif code = F8 then
-			palette_toggle <= '0';
-		elsif code = F9 then
-			video_toggle <= '0';
-        end if;
-      end if;
-    end if;
-  end process shift_ctrl;
+   keyboard_rom : entity work.dualport_2clk_ram
+      generic map (
+         ADDR_WIDTH   => 11,
+         DATA_WIDTH   => 8,
+         ROM_PRELOAD  => true,
+         ROM_FILE     => "../../CORE/Apple-II_MiSTer-master/rtl/roms/keyboard.hex",
+         ROM_FILE_HEX => true
+      )
+      port map (
+         clock_a   => CLK_14M,
+         wren_a    => '0',
+         address_a => std_logic_vector(rom_addr),
+         data_a    => (others => '0'),
 
-  code <= unsigned(ps2_key(7 downto 0));
-  ext <= ps2_key(8);
+         clock_b   => CLK_14M,
+         address_b => std_logic_vector(rom_addr),
+         data_b    => (others => '0'),
+         q_b       => q_signal
+      );
 
-  fsm : process (CLK_14M, reset)
-  begin
-    if reset = '1' then
-      state <= IDLE;
-      latched_code <= (others => '0');
-      latched_ext <= '0';
-      key_pressed <= '0';
-    elsif rising_edge(CLK_14M) then
-      state <= next_state;
-      if reads = '1' then key_pressed <= '0'; end if;
-      if state = HAVE_CODE then
-        old_stb <= ps2_key(10);
+
+   ---------------------------------------------------------------------------
+   -- Apple keyboard output
+   ---------------------------------------------------------------------------
+
+   K <= key_pressed & rom_out(6 downto 0);
+
+
+   ---------------------------------------------------------------------------
+   -- Caps Lock
+   ---------------------------------------------------------------------------
+
+   caplock_ctrl : process(CLK_14M, reset)
+   begin
+
+      if reset = '1' then
+         caplock <= '0';
+      elsif rising_edge(CLK_14M) then
+         -- Caps Lock is already tracked by the MEGA65 keyboard framework.
+         caplock <= not mega65_caps;
       end if;
-      if state = GOT_KEY_UP_CODE then
-        akd <= '0';
-      end if;
-      if state = NORMAL_KEY then
-        -- set up keyboard ROM read address
-        latched_code <= code ;
-        latched_ext <= ext;
-      end if;
-      if state = KEY_READY and junction_code /= x"FF" then
-        -- key code ready from ROM
-         akd <= '1';
-         key_pressed <= '1';
-         rep_timer <= to_unsigned(7000000, 23); -- 0.5s
-      end if;
-      if akd = '1' then
-         rep_timer <= rep_timer - 1;
-         if rep_timer = 0 then
-            rep_timer <= to_unsigned(933333, 23); -- 1/15s
-            key_pressed <= '1';
+
+   end process caplock_ctrl;
+
+
+   ---------------------------------------------------------------------------
+   -- Modifier / special-key state
+   ---------------------------------------------------------------------------
+
+   shift_ctrl : process(CLK_14M, reset)
+   begin
+
+      if reset = '1' then
+
+         shift          <= '0';
+         ctrl           <= '0';
+
+         open_apple     <= '0';
+         closed_apple   <= '0';
+
+         soft_reset     <= '0';
+         video_toggle   <= '0';
+         palette_toggle <= '0';
+
+
+      elsif rising_edge(CLK_14M) then
+
+
+         ---------------------------------------------------------------
+         -- Key press
+         ---------------------------------------------------------------
+
+         if state = HAVE_CODE then
+            if code = LEFT_SHIFT or code = RIGHT_SHIFT then
+               shift <= '1';
+            elsif code = LEFT_CTRL then
+               ctrl <= '1';
+            elsif code = WINDOWS then
+               open_apple <= '1';
+            elsif code = ALT then
+               closed_apple <= '1';
+            elsif code = F13 and ctrl = '1' then
+               soft_reset <= '1';
+            elsif code = F8 then
+               palette_toggle <= '1';
+            elsif code = F9 then
+               video_toggle <= '1';
+            end if;
+
+
+         ---------------------------------------------------------------
+         -- Key release
+         ---------------------------------------------------------------
+
+         elsif state = KEY_UP then
+            if code = LEFT_SHIFT or code = RIGHT_SHIFT then
+               shift <= '0';
+            elsif code = LEFT_CTRL then
+               ctrl <= '0';
+            elsif code = WINDOWS then
+               open_apple <= '0';
+            elsif code = ALT then
+               closed_apple <= '0';
+            elsif code = F13 then
+               soft_reset <= '0';
+            elsif code = F8 then
+               palette_toggle <= '0';
+            elsif code = F9 then
+               video_toggle <= '0';
+
+            end if;
+
          end if;
+
       end if;
-    end if;
-  end process fsm;
 
-  fsm_next_state : process (code, old_stb, ps2_key, state)
-  begin
-    next_state <= state;
-    case state is
-      when IDLE =>
-        if old_stb /= ps2_key(10) then next_state <= HAVE_CODE; end if;
+   end process shift_ctrl;
 
-      when HAVE_CODE =>
-        next_state <= DECODE;
 
-      when DECODE =>
-        if ps2_key(9) = '0' then
-          next_state <= GOT_KEY_UP_CODE;
-        elsif code = LEFT_SHIFT or code = RIGHT_SHIFT or code = LEFT_CTRL or code = CAPS_LOCK then
-          next_state <= IDLE;
-        else
-          next_state <= NORMAL_KEY;
-        end if;
+   ---------------------------------------------------------------------------
+   -- Incoming scan code
+   ---------------------------------------------------------------------------
 
-      when GOT_KEY_UP_CODE =>
-        next_state <= GOT_KEY_UP2;
+   code <= unsigned(PS2_Key(7 downto 0));
+   ext  <= PS2_Key(8);
 
-      when GOT_KEY_UP2 =>
-        next_state <= KEY_UP;
 
-      when KEY_UP =>
-        next_state <= IDLE;
+   ---------------------------------------------------------------------------
+   -- Keyboard state machine
+   ---------------------------------------------------------------------------
 
-      when NORMAL_KEY =>
-        next_state <= KEY_READY1;
+   fsm : process(CLK_14M, reset)
+   begin
 
-      when KEY_READY1 =>
-        next_state <= KEY_READY;
+      if reset = '1' then
 
-      when KEY_READY =>
-        next_state <= IDLE;
-    end case;
-  end process fsm_next_state;
+         state        <= IDLE;
+         latched_code <= (others => '0');
+         latched_ext  <= '0';
 
-  -- PS/2 scancode to Keyboard ROM address translation
-  rom_addr <= '0' & caplock & junction_code(6 downto 0) & not ctrl & not shift;
+         key_pressed  <= '0';
+         akd          <= '0';
 
-  -- the following junction codes correspond to the locations in the Apple II keybpard matrix
-  -- see "Keyboard Matrix A2e", drawing number 699-00760C;  decimal values converted to hex (e.g. CR -> 66 -> 0x42)
-  with latched_ext & latched_code select
-    junction_code <=
-     X"00" when '0'&X"76", -- Escape ("esc" key)
-     X"01" when '0'&X"16", -- 1
-     X"02" when '0'&X"1e", -- 2
-     X"03" when '0'&X"26", -- 3
-     X"04" when '0'&X"25", -- 4
-     X"05" when '0'&X"36", -- 6
-     X"06" when '0'&X"2e", -- 5
-     X"07" when '0'&X"3d", -- 7
-     X"08" when '0'&X"3e", -- 8
-     X"09" when '0'&X"46", -- 9
+         old_stb      <= '0';
+         rep_timer    <= (others => '0');
 
-     X"0A" when '0'&X"0d", -- Horizontal Tab
-     X"0B" when '0'&X"15", -- Q
-     X"0C" when '0'&X"1d", -- W
-     X"0D" when '0'&X"24", -- E
-     X"0E" when '0'&X"2d", -- R
-     X"0F" when '0'&X"35", -- Y
-     X"10" when '0'&X"2c", -- T
-     X"11" when '0'&X"3c", -- U
-     X"12" when '0'&X"43", -- I
-     X"13" when '0'&X"44", -- O
 
-     X"14" when '0'&X"1c", -- A
-     X"15" when '0'&X"23", -- D
-     X"16" when '0'&X"1b", -- S
-     X"17" when '0'&X"33", -- H
-     X"18" when '0'&X"2b", -- F
-     X"19" when '0'&X"34", -- G
-     X"1A" when '0'&X"3b", -- J
-     X"1B" when '0'&X"42", -- K
-     X"1C" when '0'&X"4c", -- ;
-     X"1D" when '0'&X"4b", -- L
+      elsif rising_edge(CLK_14M) then
 
-     X"1E" when '0'&X"1a", -- Z
-     X"1F" when '0'&X"22", -- X
-     X"20" when '0'&X"21", -- C
-     X"21" when '0'&X"2a", -- V
-     X"22" when '0'&X"32", -- B
-     X"23" when '0'&X"31", -- N
-     X"24" when '0'&X"3a", -- M
-     X"25" when '0'&X"41", -- ,
-     X"26" when '0'&X"49", -- .
-     X"27" when '0'&X"4a", -- /
+         state <= next_state;
 
-     x"28" when '1'&x"4a", -- KP /
---     X"29" when '1'&x"6b", -- KP Left
-     X"2A" when '0'&x"70", -- KP 0
-     X"2B" when '0'&x"69", -- KP 1
-     X"2C" when '0'&x"72", -- KP 2
-     X"2D" when '0'&x"7a", -- KP 3
-     X"2E" when '0'&X"5d", -- \
-     X"2F" when '0'&X"55", -- =
-     X"30" when '0'&X"45", -- 0
-     X"31" when '0'&X"4e", -- -
 
---     x"32" when x"", -- KP )
---     X"33" when X"76", -- KP Escape ("esc" key)
-     X"34" when '0'&x"6B", -- KP 4
-     X"35" when '0'&x"73", -- KP 5
-     X"36" when '0'&x"74", -- KP 6
-     X"37" when '0'&x"6C", -- KP 7
-     X"38" when '0'&X"0e", -- `
-     X"39" when '0'&X"4d", -- P
-     X"3A" when '0'&X"54", -- [
-     X"3B" when '0'&X"5b", -- ]
+         ---------------------------------------------------------------
+         -- Apple has read the key
+         ---------------------------------------------------------------
 
-     X"3C" when '0'&X"7c", -- KP *
---     X"3D" when '1'&X"74", -- KP Right
-     X"3E" when '0'&X"75", -- KP 8
-     X"3F" when '0'&X"7D", -- KP 9
-     X"40" when '0'&X"71", -- KP .
-     X"41" when '0'&X"79", -- KP +
-     X"42" when '0'&X"5a", -- Carriage return ("enter" key)
-     X"43" when '1'&X"75", -- (up arrow)
-     X"44" when '0'&X"29", -- Space
-     X"45" when '0'&X"52", -- '
+         if reads = '1' then
+            key_pressed <= '0';
+         end if;
 
---     X"46" when X"4a", -- ?
---     X"47" when X"29", -- KP Space
---     X"48" when x"", -- KP (
-     X"49" when '0'&X"7b", -- KP -
-     X"4A" when '1'&X"5a", -- KP return
---     X"4B" when X"", -- KP ,
-     X"4C" when '1'&X"71", -- Del key - mapped to character 127 ("rub" / "delete" - shows as a square cursor characters)
-	 X"4E" when '0'&X"66", -- KP del (backspace - mapped to left)
-     X"4D" when '1'&X"72", -- down arrow
-     X"4E" when '1'&X"6b", -- left arrow
-     X"4F" when '1'&X"74", -- right arrow
 
-     X"FF" when others;
+         ---------------------------------------------------------------
+         -- Accept new keyboard event toggle
+         ---------------------------------------------------------------
+
+         if state = HAVE_CODE then
+            old_stb <= PS2_Key(10);
+         end if;
+
+
+         ---------------------------------------------------------------
+         -- Key release
+         ---------------------------------------------------------------
+
+         if state = GOT_KEY_UP_CODE then
+            akd <= '0';
+         end if;
+
+
+         ---------------------------------------------------------------
+         -- Latch normal key
+         ---------------------------------------------------------------
+
+         if state = NORMAL_KEY then
+
+            latched_code <= code;
+            latched_ext  <= ext;
+
+         end if;
+
+
+         ---------------------------------------------------------------
+         -- Valid character from keyboard ROM
+         ---------------------------------------------------------------
+
+         if state = KEY_READY and
+            junction_code /= x"FF" and
+            suppress_key = '0'
+         then
+
+            akd         <= '1';
+            key_pressed <= '1';
+
+            -- Initial key-repeat delay: approximately 0.5 seconds.
+            rep_timer <= to_unsigned(7000000, 23);
+
+         end if;
+
+
+         ---------------------------------------------------------------
+         -- Auto repeat
+         ---------------------------------------------------------------
+
+         if akd = '1' then
+
+            rep_timer <= rep_timer - 1;
+
+            if rep_timer = 0 then
+               rep_timer <= to_unsigned(933333, 23);
+               
+               -- Shift+0 in MEGA65 layout deliberately generates nothing.
+               if suppress_key = '0' then
+                  key_pressed <= '1';
+               else
+                  key_pressed <= '0';
+               end if;
+
+            end if;
+
+         end if;
+
+      end if;
+
+   end process fsm;
+
+
+   ---------------------------------------------------------------------------
+   -- State-machine combinational logic
+   ---------------------------------------------------------------------------
+
+   fsm_next_state : process(code, old_stb, PS2_Key, state)
+   begin
+
+      next_state <= state;
+
+
+      case state is
+
+
+         when IDLE =>
+
+            if old_stb /= PS2_Key(10) then
+               next_state <= HAVE_CODE;
+            end if;
+
+
+         when HAVE_CODE =>
+
+            next_state <= DECODE;
+
+
+         when DECODE =>
+
+            if PS2_Key(9) = '0' then
+
+               next_state <= GOT_KEY_UP_CODE;
+
+            elsif
+               code = LEFT_SHIFT  or
+               code = RIGHT_SHIFT or
+               code = LEFT_CTRL   or
+               code = CAPS_LOCK
+            then
+
+               next_state <= IDLE;
+
+            else
+
+               next_state <= NORMAL_KEY;
+
+            end if;
+
+
+         when GOT_KEY_UP_CODE =>
+            next_state <= GOT_KEY_UP2;
+
+         when GOT_KEY_UP2 =>
+            next_state <= KEY_UP;
+
+         when KEY_UP =>
+            next_state <= IDLE;
+
+         when NORMAL_KEY =>
+            next_state <= KEY_READY1;
+
+         when KEY_READY1 =>
+            next_state <= KEY_READY;
+
+         when KEY_READY =>
+            next_state <= IDLE;
+
+      end case;
+
+   end process fsm_next_state;
+
+
+   ---------------------------------------------------------------------------
+   -- Keyboard ROM address
+   --
+   -- The Apple keyboard ROM uses:
+   --
+   -- caplock
+   -- keyboard matrix junction
+   -- CTRL
+   -- SHIFT
+   --
+   -- effective_junction/effective_shift allow the MEGA65 glyph layout to
+   -- translate its different shifted keycap arrangement.
+   ---------------------------------------------------------------------------
+
+   rom_addr <=
+      '0' &
+      caplock &
+      effective_junction(6 downto 0) &
+      not ctrl &
+      not effective_shift;
+
+
+   ---------------------------------------------------------------------------
+   -- PS/2 scan code -> Apple IIe keyboard matrix junction
+   ---------------------------------------------------------------------------
+
+   with latched_ext & std_logic_vector(latched_code) select
+
+      junction_code <=
+
+         ---------------------------------------------------------------
+         -- Main keyboard
+         ---------------------------------------------------------------
+
+         x"00" when '0' & x"76", -- Escape
+
+         x"01" when '0' & x"16", -- 1
+         x"02" when '0' & x"1E", -- 2
+         x"03" when '0' & x"26", -- 3
+         x"04" when '0' & x"25", -- 4
+         x"05" when '0' & x"36", -- 6
+         x"06" when '0' & x"2E", -- 5
+         x"07" when '0' & x"3D", -- 7
+         x"08" when '0' & x"3E", -- 8
+         x"09" when '0' & x"46", -- 9
+         x"0A" when '0' & x"0D", -- Tab
+         x"0B" when '0' & x"15", -- Q
+         x"0C" when '0' & x"1D", -- W
+         x"0D" when '0' & x"24", -- E
+         x"0E" when '0' & x"2D", -- R
+         x"0F" when '0' & x"35", -- Y
+         x"10" when '0' & x"2C", -- T
+         x"11" when '0' & x"3C", -- U
+         x"12" when '0' & x"43", -- I
+         x"13" when '0' & x"44", -- O
+         x"14" when '0' & x"1C", -- A
+         x"15" when '0' & x"23", -- D
+         x"16" when '0' & x"1B", -- S
+         x"17" when '0' & x"33", -- H
+         x"18" when '0' & x"2B", -- F
+         x"19" when '0' & x"34", -- G
+         x"1A" when '0' & x"3B", -- J
+         x"1B" when '0' & x"42", -- K
+         x"1C" when '0' & x"4C", -- ;
+         x"1D" when '0' & x"4B", -- L
+         x"1E" when '0' & x"1A", -- Z
+         x"1F" when '0' & x"22", -- X
+         x"20" when '0' & x"21", -- C
+         x"21" when '0' & x"2A", -- V
+         x"22" when '0' & x"32", -- B
+         x"23" when '0' & x"31", -- N
+         x"24" when '0' & x"3A", -- M
+         x"25" when '0' & x"41", -- ,
+         x"26" when '0' & x"49", -- .
+         x"27" when '0' & x"4A", -- /
+
+
+         ---------------------------------------------------------------
+         -- Keypad / additional Apple positions
+         ---------------------------------------------------------------
+
+         x"28" when '1' & x"4A", -- KP /
+
+         x"2A" when '0' & x"70", -- KP 0
+         x"2B" when '0' & x"69", -- KP 1
+         x"2C" when '0' & x"72", -- KP 2
+         x"2D" when '0' & x"7A", -- KP 3
+         x"2E" when '0' & x"5D", -- \
+         x"2F" when '0' & x"55", -- =
+         x"30" when '0' & x"45", -- 0
+         x"31" when '0' & x"4E", -- -
+         x"34" when '0' & x"6B", -- KP 4
+         x"35" when '0' & x"73", -- KP 5
+         x"36" when '0' & x"74", -- KP 6
+         x"37" when '0' & x"6C", -- KP 7
+         x"38" when '0' & x"0E", -- `
+         x"39" when '0' & x"4D", -- P
+         x"3A" when '0' & x"54", -- [
+         x"3B" when '0' & x"5B", -- ]
+         x"3C" when '0' & x"7C", -- KP *
+         x"3E" when '0' & x"75", -- KP 8
+         x"3F" when '0' & x"7D", -- KP 9
+         x"40" when '0' & x"71", -- KP .
+         x"41" when '0' & x"79", -- KP +
+         x"42" when '0' & x"5A", -- Return
+         x"43" when '1' & x"75", -- Up arrow
+         x"44" when '0' & x"29", -- Space
+         x"45" when '0' & x"52", -- '
+         x"49" when '0' & x"7B", -- KP -
+         x"4A" when '1' & x"5A", -- KP Return
+         x"4C" when '1' & x"71", -- Delete
+         x"4E" when '0' & x"66", -- Backspace
+         x"4D" when '1' & x"72", -- Down
+         x"4E" when '1' & x"6B", -- Left
+         x"4F" when '1' & x"74", -- Right
+
+
+         ---------------------------------------------------------------
+         -- MEGA65 private glyph pseudo codes
+         ---------------------------------------------------------------
+
+         x"1C" when '0' & x"F0", -- : -> Apple ; + forced shift
+         x"02" when '0' & x"F1", -- @ -> Apple 2 + forced shift
+         x"08" when '0' & x"F2", -- * -> Apple 8 + forced shift
+         x"2F" when '0' & x"F3", -- + -> Apple = + forced shift
+         x"45" when '0' & x"F4", -- " -> quote + forced shift
+         x"07" when '0' & x"F5", -- & -> Apple 7 + forced shift
+         x"45" when '0' & x"F6", -- ' -> quote + forced unshift
+         x"09" when '0' & x"F7", -- ( -> Apple 9 + forced shift
+         x"30" when '0' & x"F8", -- ) -> Apple 0 + forced shift
+         x"03" when '0' & x"F9", -- # -> Apple 3 + forced shift
+
+
+         ---------------------------------------------------------------
+         -- FA deliberately has NO mapping.
+         --
+         -- Used for MEGA65 Shift+0 where the keycap has no shifted glyph.
+         ---------------------------------------------------------------
+
+
+         ---------------------------------------------------------------
+         -- Shift+] = ;
+         --
+         -- Physical Shift remains held, therefore this pseudo code forces
+         -- the Apple keyboard ROM to treat the semicolon matrix key as
+         -- unshifted.
+         ---------------------------------------------------------------
+
+         x"1C" when '0' & x"FB",
+
+
+         ---------------------------------------------------------------
+         -- Unknown / unsupported code
+         ---------------------------------------------------------------
+
+         x"FF" when others;
+
 
 end rtl;

@@ -230,6 +230,8 @@ architecture synthesis of main is
     
     signal mouse_x_old         : std_logic_vector(1 downto 0) := "00";
     signal mouse_y_old         : std_logic_vector(1 downto 0) := "00";
+    
+    signal mega65_layout_main_i: std_logic := '1';
    
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -240,30 +242,32 @@ architecture synthesis of main is
     constant C_MENU_MB_5           : integer := 15;
     constant C_MENU_MO_5           : integer := 16;
     constant C_MENU_SN_5           : integer := 17;
-    constant C_MENU_HDMI_16_9_50   : natural := 24;
-    constant C_MENU_HDMI_16_9_60   : natural := 25;
-    constant C_MENU_HDMI_4_3_50    : natural := 26;
-    constant C_MENU_HDMI_5_4_50    : natural := 27;
-    constant C_MENU_HDMI_640_60    : natural := 28;
-    constant C_MENU_HDMI_720_5994  : natural := 29;
-    constant C_MENU_SVGA_800_60    : natural := 30;
-    constant C_MENU_CRT_EMULATION  : natural := 33;
-    constant C_MENU_HDMI_ZOOM      : natural := 34;
+    constant C_MENU_HDMI_16_9_50   : natural := 23;
+    constant C_MENU_HDMI_16_9_60   : natural := 24;
+    constant C_MENU_HDMI_4_3_50    : natural := 25;
+    constant C_MENU_HDMI_5_4_50    : natural := 26;
+    constant C_MENU_HDMI_640_60    : natural := 27;
+    constant C_MENU_HDMI_720_5994  : natural := 28;
+    constant C_MENU_SVGA_800_60    : natural := 29;
+    constant C_MENU_CRT_EMULATION  : natural := 32;
+    constant C_MENU_HDMI_ZOOM      : natural := 33;
     constant C_MENU_IMPROVE_AUDIO  : natural := 35;
-    constant C_MENU_COLOR          : natural := 38;
-    constant C_MENU_BW             : natural := 39;
-    constant C_MENU_GREEN          : natural := 40;
-    constant C_MENU_AMBER          : natural := 41;
-    constant C_MENU_CPU_65C02      : natural := 44;
-    constant C_MENU_ROMSWITCH      : natural := 45;
-    constant C_MENU_PALMODE        : natural := 46;
-    constant C_MENU_NTSC           : natural := 48;
-    constant C_MENU_2GS            : natural := 49;
-    constant C_MENU_AppleWin       : natural := 50;
-    constant C_MENU_2CPAL          : natural := 51;
-    constant C_MENU_LRT            : natural := 54;
-    constant C_MENU_POTXY          : natural := 56;
-    constant C_MENU_POTPOL         : natural := 57;
+    constant C_MENU_COLOR          : natural := 37;
+    constant C_MENU_BW             : natural := 38;
+    constant C_MENU_GREEN          : natural := 39;
+    constant C_MENU_AMBER          : natural := 40;
+    constant C_MENU_CPU_65C02      : natural := 43;
+    constant C_MENU_ROMSWITCH      : natural := 44;
+    constant C_MENU_PALMODE        : natural := 45;
+    constant C_MENU_NTSC           : natural := 47;
+    constant C_MENU_2GS            : natural := 48;
+    constant C_MENU_AppleWin       : natural := 49;
+    constant C_MENU_2CPAL          : natural := 50;
+    constant C_MENU_LRT            : natural := 53;
+    constant C_MENU_POTXY          : natural := 55;
+    constant C_MENU_POTPOL         : natural := 56;
+    constant C_MENU_KBMODE         : natural := 59;
+
     
     
 begin
@@ -288,11 +292,11 @@ begin
    fd2_wp <= '1' when osm_control_i(C_MENU_FD_B) else '0';
    
    -- misc toggles
-   romswitch <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
-   palmode   <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
-   
-   pot_pol_sw <= osm_control_i(C_MENU_POTPOL);
-   potxy_sw   <= osm_control_i(C_MENU_POTXY);
+   romswitch              <= '1' when osm_control_i(C_MENU_ROMSWITCH) else '0';
+   palmode                <= '1' when osm_control_i(C_MENU_PALMODE) else '0';
+   pot_pol_sw             <= osm_control_i(C_MENU_POTPOL);
+   potxy_sw               <= osm_control_i(C_MENU_POTXY);
+   mega65_layout_main_i   <= '1' when osm_control_i(C_MENU_KBMODE) else '0';
    
    -- quadrature-to-delta converter between MEGA65 port 2 and apple2_top
     mouse_proc : process(clk_main_i)
@@ -381,7 +385,7 @@ begin
        -- 0 = POTX
        -- 1 = POTY
        if potxy_sw = '0' then
-          pot1_val <= pot1_x_i; -- hard wired to potx for now
+          pot1_val <= pot1_x_i;
        else
           pot1_val <= pot1_y_i;
        end if;
@@ -391,7 +395,7 @@ begin
        -- Different joystick adapters use opposite POT polarities.
        if pot_pol_sw = '1' then
           -- Active-low POT button, e.g. Amiga-style
-          if unsigned(pot1_val) < unsigned'(x"80") then -- hard wired to Amiga style for now
+          if unsigned(pot1_val) < unsigned'(x"80") then
              joy2_button <= '1';
           else
              joy2_button <= '0';
@@ -638,12 +642,17 @@ begin
       
      -- keyboard adapter
     i_keyboard_adapter : entity work.keyboard_adapter
-        port map (
-            keyboard_n         => keyboard_n,
-            kb_key_pressed_n   => kb_key_pressed_n_i,
-            CLK_14M            => clk_main_i,
-            reset              => reset_soft_i,
-            ps2_key            => ps2_key
+    port map (
+        keyboard_n        => keyboard_n,
+        kb_key_pressed_n  => kb_key_pressed_n_i,
+
+        -- 0 = Apple II layout
+        -- 1 = MEGA65 glyph layout
+        mega65_layout_i   => mega65_layout_main_i,--osm_control_i(C_MENU_KBLAYOUT),
+
+        CLK_14M           => clk_main_i,
+        reset             => reset_soft_i,
+        ps2_key           => ps2_key
     );
     
     i_apple2_top : entity work.apple2_top
@@ -675,6 +684,7 @@ begin
         
         ps2_key         => ps2_key,
         mega65_caps     => not keyboard_n(m65_capslock),
+        mega65_layout_i => mega65_layout_main_i,
         joy             => apple_joy,
         joy_an          => apple_joy_an,
 
