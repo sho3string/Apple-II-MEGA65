@@ -625,35 +625,18 @@ begin
 
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
    i_keyboard : entity work.keyboard
-      port map (
-         clk_main_i           => clk_main_i,
+   port map (
+      clk_main_i       => clk_main_i,
+      reset_i          => not reset_core_n,
 
-         -- Interface to the MEGA65 keyboard
-         key_num_i            => kb_key_num_i,
-         key_pressed_n_i      => kb_key_pressed_n_i,
+      key_num_i        => kb_key_num_i,
+      key_pressed_n_i  => kb_key_pressed_n_i,
 
-         -- @TODO: Create the kind of keyboard output that your core needs
-         -- "example_n_o" is a low  active register and used by the demo core:
-         --    bit 0: Space
-         --    bit 1: Return
-         --    bit 2: Run/Stop
-         keyboard_n_o          => keyboard_n
-      ); -- i_keyboard
+      mega65_layout_i  => mega65_layout_main_i,
+
+      ps2_key_o        => ps2_key
+   );
       
-     -- keyboard adapter
-    i_keyboard_adapter : entity work.keyboard_adapter
-    port map (
-        keyboard_n        => keyboard_n,
-        kb_key_pressed_n  => kb_key_pressed_n_i,
-
-        -- 0 = Apple II layout
-        -- 1 = MEGA65 glyph layout
-        mega65_layout_i   => mega65_layout_main_i,--osm_control_i(C_MENU_KBLAYOUT),
-
-        CLK_14M           => clk_main_i,
-        reset             => reset_soft_i,
-        ps2_key           => ps2_key
-    );
     
     i_apple2_top : entity work.apple2_top
    port map (
