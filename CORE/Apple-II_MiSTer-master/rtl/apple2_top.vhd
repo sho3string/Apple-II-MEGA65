@@ -69,6 +69,7 @@ port (
 
 	PS2_Key        : in  std_logic_vector(10 downto 0);
 	mega65_caps    : in  std_logic;
+	mega65_alt     : in  std_logic;
 	mega65_layout_i: in  std_logic;
 	joy            : in  std_logic_vector(5 downto 0);
 	joy_an         : in  std_logic_vector(15 downto 0);
@@ -403,6 +404,7 @@ begin
   keyboard : entity work.keyboard_apple port map (
     PS2_Key  => PS2_Key,
     mega65_caps => mega65_caps,
+    mega65_alt_i => mega65_alt,
     mega65_layout_i => mega65_layout_i,
     CLK_14M  => CLK_14M,
 	 reset    => reset_cold, -- use reset_cold, not reset so we keep the

@@ -190,6 +190,7 @@ architecture synthesis of main is
     signal RTC                 : std_logic_vector(64 downto 0);
     
     constant m65_capslock      : integer := 72;
+    constant m65_alt           : integer := 65;
     
     -- Expansion slots
     signal slot4_mockingboard  : std_logic := '0';
@@ -232,6 +233,8 @@ architecture synthesis of main is
     signal mouse_y_old         : std_logic_vector(1 downto 0) := "00";
     
     signal mega65_layout_main_i: std_logic := '1';
+    
+    signal mega65_alt              : std_logic;
    
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -625,17 +628,18 @@ begin
 
    -- Convert MEGA65 keystrokes to the Apple II keyboard matrix
    i_keyboard : entity work.keyboard
-   port map (
-      clk_main_i       => clk_main_i,
-      reset_i          => not reset_core_n,
-
-      key_num_i        => kb_key_num_i,
-      key_pressed_n_i  => kb_key_pressed_n_i,
-
-      mega65_layout_i  => mega65_layout_main_i,
-
-      ps2_key_o        => ps2_key
-   );
+    port map (
+       clk_main_i       => clk_main_i,
+       reset_i          => not reset_core_n,
+    
+       key_num_i        => kb_key_num_i,
+       key_pressed_n_i  => kb_key_pressed_n_i,
+    
+       mega65_layout_i  => mega65_layout_main_i,
+    
+       ps2_key_o        => ps2_key,
+       mega65_alt_o     => mega65_alt
+    );
       
     
     i_apple2_top : entity work.apple2_top
@@ -667,6 +671,7 @@ begin
         
         ps2_key         => ps2_key,
         mega65_caps     => not keyboard_n(m65_capslock),
+        mega65_alt      => mega65_alt,
         mega65_layout_i => mega65_layout_main_i,
         joy             => apple_joy,
         joy_an          => apple_joy_an,

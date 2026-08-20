@@ -25,6 +25,7 @@ entity keyboard_apple is
       PS2_Key        : in  std_logic_vector(10 downto 0);
 
       mega65_caps    : in  std_logic;
+      mega65_alt_i   : in  std_logic;
 
       -- '0' = original Apple positional mapping
       -- '1' = MEGA65 glyph-oriented mapping
@@ -114,7 +115,7 @@ architecture rtl of keyboard_apple is
    constant F13         : unsigned(7 downto 0) := x"06";
    constant F8          : unsigned(7 downto 0) := x"0A";
    constant F9          : unsigned(7 downto 0) := x"01";
-
+   
 
    ---------------------------------------------------------------------------
    -- State machine
@@ -167,14 +168,16 @@ begin
    ---------------------------------------------------------------------------
 
    force_shift <= '1' when
-       latched_code = x"F1" or  -- @
-       latched_code = x"F2" or  -- *
-       latched_code = x"F3" or  -- +
-       latched_code = x"F4" or  -- "
-       latched_code = x"F5" or  -- &
-       latched_code = x"F7" or  -- (
-       latched_code = x"F8" or  -- )
-       latched_code = x"F9"     -- #
+        latched_code = x"F1" or
+        latched_code = x"F2" or
+        latched_code = x"F3" or
+        latched_code = x"F4" or
+        latched_code = x"F5" or
+        latched_code = x"F7" or
+        latched_code = x"F8" or
+        latched_code = x"F9" or
+        latched_code = x"FD" or  -- ~
+        latched_code = x"FE"     -- |
     else '0';
 
 
@@ -196,21 +199,71 @@ begin
    ---------------------------------------------------------------------------
 
    effective_shift <=
+   ------------------------------------------------------------------------
+   -- MEGA65 : / [ / {
+   ------------------------------------------------------------------------
 
-   -- MEGA65 :/[ key
-   '1' when latched_code = x"F0" and shift = '0' else
-   '0' when latched_code = x"F0" and shift = '1' else
+   -- ALT+: = {
+   '1' when mega65_layout_i = '1' and
+            mega65_alt_i = '1' and
+            latched_code = x"F0" else
+   -- Shift+: = [
+   '0' when latched_code = x"F0" and
+            shift = '1' else
+   -- plain : = :
+   '1' when latched_code = x"F0" else
 
-   -- MEGA65 ;/] key
+   ------------------------------------------------------------------------
+   -- MEGA65 ; / ] / }
+   ------------------------------------------------------------------------
+
+   -- ALT+; = }
+   '1' when mega65_layout_i = '1' and
+            mega65_alt_i = '1' and
+            latched_code = x"FB" else
+   -- plain ; and Shift+; use an unshifted Apple matrix position
    '0' when latched_code = x"FB" else
 
+
+    -- ALT+, = ~
+    '1' when mega65_layout_i = '1' and
+             mega65_alt_i = '1' and
+             latched_code = x"EC" else
+    
+    -- ALT+. = |
+    '1' when mega65_layout_i = '1' and
+             mega65_alt_i = '1' and
+             latched_code = x"ED" else
+
+    -- ALT+/ = \
+    '0' when mega65_layout_i = '1' and
+             mega65_alt_i = '1' and
+             latched_code = x"EE" else
+    
+    -- ALT+= = _
+    '1' when mega65_layout_i = '1' and
+             mega65_alt_i = '1' and
+             latched_code = x"EB" else
+             
+    -- Shift+= must remain =
+    '0' when mega65_layout_i = '1' and
+             latched_code = x"EB" else
+             
+   ------------------------------------------------------------------------
+   -- Existing special cases
+   ------------------------------------------------------------------------
+
+   '0' when force_unshift = '1' else
    -- MEGA65 Shift+7 = '
    '0' when mega65_layout_i = '1' and
             shift = '1' and
             latched_code = x"3D" else
-
-   '0' when force_unshift = '1' else
+    -- MEGA65 Shift+- should remain -
+   '0' when mega65_layout_i = '1' and
+             shift = '1' and
+             latched_code = x"4E" else
    '1' when force_shift = '1' else
+
    shift;
 
    ---------------------------------------------------------------------------
@@ -238,59 +291,95 @@ begin
        effective_junction <= junction_code;
        suppress_key       <= '0';
     
+    
        ------------------------------------------------------------------------
-       -- Dedicated MEGA65 :/[ key
+       -- Dedicated MEGA65 : / [ / { key
        ------------------------------------------------------------------------
        if latched_code = x"F0" then
     
-          if shift = '1' then
-             effective_junction <= x"3A";  -- [
+          if mega65_layout_i = '1' and mega65_alt_i = '1' then
+             -- ALT + : key = {
+             -- Apple [ matrix position with Shift active
+             effective_junction <= x"3A";
+          elsif shift = '1' then
+    
+             -- Shift + : key = [
+             effective_junction <= x"3A";
           else
-             effective_junction <= x"1C";  -- :
+    
+             -- : key = :
+             effective_junction <= x"1C";
           end if;
     
     
        ------------------------------------------------------------------------
-       -- Dedicated MEGA65 ;/] key
+       -- Dedicated MEGA65 ; / ] / } key
        ------------------------------------------------------------------------
        elsif latched_code = x"FB" then
     
-          if shift = '1' then
-             effective_junction <= x"3B";  -- ]
+          if mega65_layout_i = '1' and mega65_alt_i = '1' then
+             -- ALT + ; key = }
+             -- Apple ] matrix position with Shift active
+             effective_junction <= x"3B";
+    
+          elsif shift = '1' then
+             -- Shift + ; key = ]
+             effective_junction <= x"3B";
           else
-             effective_junction <= x"1C";  -- ;
+             -- ; key = ;
+             effective_junction <= x"1C";
           end if;
     
+        ------------------------------------------------------------------------
+        -- MEGA65 , / ~ key
+        ------------------------------------------------------------------------
+        elsif latched_code = x"EC" then
+        
+           if mega65_layout_i = '1' and mega65_alt_i = '1' then
+              effective_junction <= x"2E";  -- ~
+           else
+              effective_junction <= x"25";  -- ,
+           end if;
+        
+        ------------------------------------------------------------------------
+        -- MEGA65 . / | key
+        ------------------------------------------------------------------------
+        elsif latched_code = x"ED" then
+        
+           if mega65_layout_i = '1' and mega65_alt_i = '1' then
+              effective_junction <= x"38";  -- |
+           else
+              effective_junction <= x"26";  -- .
+           end if;
+        
+        ------------------------------------------------------------------------
+        -- MEGA65 / / \ key
+        ------------------------------------------------------------------------
+        elsif latched_code = x"EE" then
+        
+           if mega65_layout_i = '1' and mega65_alt_i = '1' then
+              effective_junction <= x"38";  -- \
+           else
+              effective_junction <= x"27";  -- /
+           end if;
+        
+        ------------------------------------------------------------------------
+        -- MEGA65 = / _ key
+        ------------------------------------------------------------------------
+        elsif latched_code = x"EB" then
+        
+           if mega65_layout_i = '1' and mega65_alt_i = '1' then
+              -- ALT + = = _
+              effective_junction <= x"31";  -- Apple - key
+           else
+              -- normal =
+              effective_junction <= x"2F";
+           end if;
     
        ------------------------------------------------------------------------
-       -- Dedicated MEGA65 @/{ key
-       ------------------------------------------------------------------------
-       elsif latched_code = x"F1" then
-    
-          if shift = '1' then
-             effective_junction <= x"3A";  -- [ matrix -> { when shifted
-          else
-             effective_junction <= x"02";  -- 2 matrix -> @ when shifted
-          end if;
-    
-    
-       ------------------------------------------------------------------------
-       -- Dedicated MEGA65 */} key
-       ------------------------------------------------------------------------
-       elsif latched_code = x"F2" then
-    
-          if shift = '1' then
-             effective_junction <= x"3B";  -- ] matrix -> } when shifted
-          else
-             effective_junction <= x"08";  -- 8 matrix -> * when shifted
-          end if;
-    
-    
-       ------------------------------------------------------------------------
-       -- MEGA65 shifted number row
+       -- Existing MEGA65 shifted number-row handling
        ------------------------------------------------------------------------
        elsif mega65_layout_i = '1' and shift = '1' then
-    
           case latched_code is
              when x"1E" =>              -- 2
                 effective_junction <= x"45";  -- "
@@ -306,11 +395,8 @@ begin
                 suppress_key <= '1';
              when others =>
                 null;
-    
           end case;
-    
        end if;
-    
     end process mega65_shifted_keys;
 
 
@@ -711,7 +797,7 @@ begin
          x"2B" when '0' & x"69", -- KP 1
          x"2C" when '0' & x"72", -- KP 2
          x"2D" when '0' & x"7A", -- KP 3
-         x"2E" when '0' & x"5D", -- \
+         x"2E" when '0' & x"5D", -- `
          x"2F" when '0' & x"55", -- =
          x"30" when '0' & x"45", -- 0
          x"31" when '0' & x"4E", -- -
@@ -719,7 +805,7 @@ begin
          x"35" when '0' & x"73", -- KP 5
          x"36" when '0' & x"74", -- KP 6
          x"37" when '0' & x"6C", -- KP 7
-         x"38" when '0' & x"0E", -- `
+         x"38" when '0' & x"0E", -- \
          x"39" when '0' & x"4D", -- P
          x"3A" when '0' & x"54", -- [
          x"3B" when '0' & x"5B", -- ]
@@ -755,8 +841,15 @@ begin
          x"09" when '0' & x"F7", -- ( -> Apple 9 + forced shift
          x"30" when '0' & x"F8", -- ) -> Apple 0 + forced shift
          x"03" when '0' & x"F9", -- # -> Apple 3 + forced shift
-
-
+         x"2E" when '0' & x"FC", -- ` from MEGA65 ALT+<-
+         x"2E" when '0' & x"FD", -- ~ from MEGA65 ALT+.
+         x"38" when '0' & x"FE", -- | from MEGA65 ALT+.
+         x"38" when '0' & x"EF", -- \ from MEGA65 ALT+/
+         x"25" when '0' & x"EC", -- MEGA65 comma key
+         x"26" when '0' & x"ED", -- MEGA65 dot key
+         x"27" when '0' & x"EE", -- MEGA65 slash key
+         x"2F" when '0' & x"EB", -- MEGA65 = key
+         
          ---------------------------------------------------------------
          -- FA deliberately has NO mapping.
          --

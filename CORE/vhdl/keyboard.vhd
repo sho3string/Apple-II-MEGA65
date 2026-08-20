@@ -50,7 +50,8 @@ entity keyboard is
       -- Apple II keyboard interface
       ---------------------------------------------------------------------------
 
-      ps2_key_o        : out std_logic_vector(10 downto 0)
+      ps2_key_o        : out std_logic_vector(10 downto 0);
+      mega65_alt_o     : out std_logic
    );
 end keyboard;
 
@@ -227,6 +228,7 @@ architecture beh of keyboard is
    constant apple_keycode_backslash   : std_logic_vector(7 downto 0) := x"0E";
 
    constant apple_keycode_reset       : std_logic_vector(7 downto 0) := x"06";
+   
 
 
    ---------------------------------------------------------------------------
@@ -256,8 +258,12 @@ architecture beh of keyboard is
    -- Dedicated MEGA65 ; key.
    -- keyboard_apple dynamically maps Shift+; to ].
    constant m65_code_semicolon   : std_logic_vector(7 downto 0) := x"FB";
-
-
+   
+   constant m65_code_backtick    : std_logic_vector(7 downto 0) := x"FC";
+   constant m65_code_comma       : std_logic_vector(7 downto 0) := x"EC";
+   constant m65_code_dot         : std_logic_vector(7 downto 0) := x"ED";
+   constant m65_code_slash       : std_logic_vector(7 downto 0) := x"EE";
+   constant m65_code_equal       : std_logic_vector(7 downto 0) := x"EB";
    ---------------------------------------------------------------------------
    -- Mapping arrays
    ---------------------------------------------------------------------------
@@ -425,7 +431,7 @@ architecture beh of keyboard is
       57 => apple_keycode_minus,
       58 => apple_keycode_equal,
       59 => apple_keycode_closedapple,
-      60 => apple_keycode_backslash,
+      60 => m65_code_noop,
       61 => apple_keycode_space,
       62 => apple_keycode_reset,
       -- Additional MEGA65 keys not present in the original positional map.
@@ -484,8 +490,8 @@ architecture beh of keyboard is
       41 => apple_keycode_esc,
       42 => apple_keycode_ctrl,
       43 => apple_keycode_tab,
-      44 => apple_keycode_comma,
-      45 => apple_keycode_period,
+      44 => m65_code_comma,   -- , / ALT -> ~
+      45 => m65_code_dot,     -- . / ALT -> |
       46 => apple_keycode_openapple,
       47 => apple_keycode_up,
       48 => apple_keycode_down,
@@ -498,7 +504,7 @@ architecture beh of keyboard is
       -- keyboard_apple handles the shifted interpretation dynamically.
       ------------------------------------------------------------------------
 
-      51 => apple_keycode_slash,       -- /
+      51 => m65_code_slash,             -- /
 
       52 => m65_code_colon,            -- :
                                          -- Shift -> [
@@ -506,7 +512,7 @@ architecture beh of keyboard is
       53 => m65_code_semicolon,        -- ;
                                          -- Shift -> ]
 
-      54 => apple_keycode_equal,       -- =
+      54 => m65_code_equal,             -- = / ALT -> _
 
       55 => m65_code_at,               -- @
                                          -- Shift -> {
@@ -530,7 +536,7 @@ architecture beh of keyboard is
       -- Shift+↑ -> |
       ------------------------------------------------------------------------
 
-      60 => apple_keycode_backslash,
+      60 => m65_code_noop,       -- MEGA65 ↑ power key unused
 
 
       61 => apple_keycode_space,
@@ -557,7 +563,7 @@ architecture beh of keyboard is
       -- Shift+← -> ~
       ------------------------------------------------------------------------
 
-      64 => apple_keycode_backtick
+      64 => m65_code_noop
    );
 
 
@@ -582,6 +588,7 @@ architecture beh of keyboard is
 
 begin
 
+   mega65_alt_o <= not key_pressed_n(m65_alt);
 
    ---------------------------------------------------------------------------
    -- Reconstruct complete MEGA65 keyboard state
@@ -703,15 +710,22 @@ begin
                   --------------------------------------------------------------
 
                   if mega65_layout_i = '1' then
-                     ps2_key_o(7 downto 0)
-                        <= ps2_codes_mega65(current_key_index);
 
-                  else
-                     ps2_key_o(7 downto 0)
-                        <= ps2_codes_apple(current_key_index);
-
+                       if mega65_alt_o = '1' and
+                          m65_keys(current_key_index) = m65_arrow_left
+                       then
+                          ps2_key_o(7 downto 0) <= m65_code_backtick;
+                       else
+                          ps2_key_o(7 downto 0)
+                             <= ps2_codes_mega65(current_key_index);
+                       end if;
+                    
+                    else
+                       ps2_key_o(7 downto 0)
+                          <= ps2_codes_apple(current_key_index);
+                    
                   end if;
-
+    
                   --------------------------------------------------------------
                   -- Only emit one key event this clock.
                   --------------------------------------------------------------
