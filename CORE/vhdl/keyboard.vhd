@@ -51,7 +51,8 @@ entity keyboard is
       ---------------------------------------------------------------------------
 
       ps2_key_o        : out std_logic_vector(10 downto 0);
-      mega65_alt_o     : out std_logic
+      mega65_alt_o     : out std_logic;
+      mega65_caps_o    : out std_logic
    );
 end keyboard;
 
@@ -588,7 +589,8 @@ architecture beh of keyboard is
 
 begin
 
-   mega65_alt_o <= not key_pressed_n(m65_alt);
+   mega65_alt_o  <= not key_pressed_n(m65_alt);
+   mega65_caps_o <= not key_pressed_n(m65_capslock);
 
    ---------------------------------------------------------------------------
    -- Reconstruct complete MEGA65 keyboard state

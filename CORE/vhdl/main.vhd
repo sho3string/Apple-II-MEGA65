@@ -234,7 +234,8 @@ architecture synthesis of main is
     
     signal mega65_layout_main_i: std_logic := '1';
     
-    signal mega65_alt              : std_logic;
+    signal mega65_alt           : std_logic;
+    signal mega65_caps          : std_logic;
    
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -253,23 +254,25 @@ architecture synthesis of main is
     constant C_MENU_HDMI_720_5994  : natural := 28;
     constant C_MENU_SVGA_800_60    : natural := 29;
     constant C_MENU_CRT_EMULATION  : natural := 32;
-    constant C_MENU_HDMI_ZOOM      : natural := 33;
-    constant C_MENU_IMPROVE_AUDIO  : natural := 35;
-    constant C_MENU_COLOR          : natural := 37;
-    constant C_MENU_BW             : natural := 38;
-    constant C_MENU_GREEN          : natural := 39;
-    constant C_MENU_AMBER          : natural := 40;
-    constant C_MENU_CPU_65C02      : natural := 43;
-    constant C_MENU_ROMSWITCH      : natural := 44;
-    constant C_MENU_PALMODE        : natural := 45;
-    constant C_MENU_NTSC           : natural := 47;
-    constant C_MENU_2GS            : natural := 48;
-    constant C_MENU_AppleWin       : natural := 49;
-    constant C_MENU_2CPAL          : natural := 50;
-    constant C_MENU_LRT            : natural := 53;
-    constant C_MENU_POTXY          : natural := 55;
-    constant C_MENU_POTPOL         : natural := 56;
-    constant C_MENU_KBMODE         : natural := 59;
+    constant C_MENU_IMPROVE_AUDIO  : natural := 33;
+    constant C_MENU_COLOR          : natural := 36;
+    constant C_MENU_BW             : natural := 37;
+    constant C_MENU_GREEN          : natural := 38;
+    constant C_MENU_AMBER          : natural := 39;
+    constant C_MENU_LRT            : natural := 43;
+    constant C_MENU_CPU_65C02      : natural := 44;
+    constant C_MENU_ROMSWITCH      : natural := 45;
+    constant C_MENU_PALMODE        : natural := 46;
+    constant C_MENU_NTSC           : natural := 50;
+    constant C_MENU_2GS            : natural := 51;
+    constant C_MENU_AppleWin       : natural := 52;
+    constant C_MENU_2CPAL          : natural := 53;
+    constant C_MENU_VGA_STD        : natural := 57;
+    constant C_MENU_VGA_15KHZHSVS  : natural := 61;
+    constant C_MENU_VGA_15KHZCS    : natural := 62;
+    constant C_MENU_POTXY          : natural := 66;
+    constant C_MENU_POTPOL         : natural := 67;
+    constant C_MENU_KBMODE         : natural := 68;
 
     
     
@@ -638,8 +641,9 @@ begin
        mega65_layout_i  => mega65_layout_main_i,
     
        ps2_key_o        => ps2_key,
-       mega65_alt_o     => mega65_alt
-    );
+       mega65_alt_o     => mega65_alt,
+       mega65_caps_o    => mega65_caps
+);
       
     
     i_apple2_top : entity work.apple2_top
@@ -670,7 +674,7 @@ begin
         tape_in         => tape_adc_act and tape_adc,
         
         ps2_key         => ps2_key,
-        mega65_caps     => not keyboard_n(m65_capslock),
+        mega65_caps     => mega65_caps,
         mega65_alt      => mega65_alt,
         mega65_layout_i => mega65_layout_main_i,
         joy             => apple_joy,

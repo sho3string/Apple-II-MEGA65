@@ -76,9 +76,13 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-    "\n Apple //e Core A3\n\n" &
+    "\n MEGA //e Core V1.0\n\n" &
    " by Muse\n" &
    " Powered by MiSTer2MEGA65 v2.0.1\n\n\n" &
+   " Original MiSTer core contributers\n" &
+   "  * Sorgelig,Alanswx,Newsdee,Steven-a-wilson & birdybro\n" &
+   " This is a fork of Alanswx's repository\n" &
+   "  * https://github.com/alanswx/Apple-II_MiSTer/\n" &
    " Press HELP\n" &
    " to mount drives & configure.\n\n" &
    "\n\n Press Space to continue.";
@@ -255,7 +259,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "Apple //e Alpha V5";
+constant CORENAME          : string := "Apple //e V1.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH
@@ -316,7 +320,7 @@ constant OPTM_S_SAVING     : string := "<Saving>";          -- the internal writ
 --             Do use a lower case \n. If you forget one of them or if you use upper case, you will run into undefined behavior.
 --          2. Start each line that contains an actual menu item (multi- or single-select) with a Space character,
 --             otherwise you will experience visual glitches.
-constant OPTM_SIZE         : natural := 62;  -- amount of items including empty lines:
+constant OPTM_SIZE         : natural := 73;  -- amount of items including empty lines:
                                              -- needs to be equal to the number of lines in OPTM_ITEMS and amount of items in OPTM_GROUPS
                                              -- IMPORTANT: If SAVE_SETTINGS is true and OPTM_SIZE changes: Make sure to re-generate and
                                              -- and re-distribute the config file. You can make a new one using M2M/tools/make_config.sh
@@ -324,20 +328,22 @@ constant OPTM_SIZE         : natural := 62;  -- amount of items including empty 
 -- Net size of the Options menu on the screen in characters (excluding the frame, which is hardcoded to two characters)
 -- Without submenus: Use OPTM_SIZE as height, otherwise count how large the actually visible main menu is.
 constant OPTM_DX           : natural := 25;
-constant OPTM_DY           : natural := 23;
+constant OPTM_DY           : natural := 19;
 
 constant OPTM_ITEMS        : string :=
    " Mega //e for MEGA65\n" &
    "\n"                     &
    " A:%s\n"                &
    " B:%s\n"                &
-   " Write Protect\n"       &
+   
+   " Write Protect\n"       &    -- submenu
    " Drive A\n"             &
    " Drive B\n"             &
    "\n"                     &
    " Back to main menu\n"   &
+   
    "\n"                     &
-   " Expansion Slots\n"     &
+   " Expansion Slots\n"     &   -- submenu
    " Slot4 - None\n"        &
    " Slot4 - Mockingboard\n"&
    " Slot4 - Mouse\n"       &
@@ -347,8 +353,9 @@ constant OPTM_ITEMS        : string :=
    " Slot5 - Saturn 5\n"    &
    "\n"                     &
    " Back to main menu\n"   &
+   
    "\n"                     &
-   " HDMI: %s\n"            &    -- HDMI submenu
+   " HDMI: %s\n"            &    --submenu
    "\n"                     &
    " 720p 50 Hz 16:9\n"     &
    " 720p 60 Hz 16:9\n"     &
@@ -359,34 +366,53 @@ constant OPTM_ITEMS        : string :=
    " 800x600 60 Hz\n"       &
    "\n"                     &
    " Back to main menu\n"   &
+   
    " HDMI: CRT emulation\n" &
-   " HDMI: Zoom-in\n"       &
    " Audio improvements\n"  &
    "\n"                     &
-   " Display Settings\n"    &
+   
+   " Display Settings\n"    &    -- submenu
    " Color\n"               &
    " B&W\n"                 &
    " Green\n"               &
    " Amber\n"               &
    "\n"                     &
    " Back to main menu\n"   &
+   
+   " System Core Settings\n"&    -- submenu
+   " Lo-Res Text\n"         &
    " CPU Type: 65C02|6502\n"&
    " Video Rom - US|Local\n"&
    " Analog out- NTSC|PAL\n"&
-   " Palette Settings\n"    &
+   "\n"                     &
+   " Back to main menu\n"   &
+   
+   
+   " Palette Settings\n"    &   -- submemnu
    " Original //e (NTSC)\n" &
    " ][gs\n"                &
    " AppleWin\n"            &
    " //c PAL\n"             &
    "\n"                     &
    " Back to main menu\n"   &
-   " Lo-Res Text\n"         &
-   " Joy Fire 2 Settings\n" &
-   " Map to POTX|POTY\n"    & -- default is off - Potx
-   " Invert Polarity\n"     & -- default is off
+   
+   " VGA: %s\n"             &  -- VGA submenu
+   " Standard\n"            &
+   "\n"                     &
+   " Retro 15 kHz mode\n"   &
+   "\n"                     &
+   " 15 kHz with HS/VS\n"   &
+   " 15 kHz with CSYNC\n"   &
    "\n"                     &
    " Back to main menu\n"   &
-   " MEGA65 KB Mapping\n"   & -- default is on
+   
+   " Joy & Keyboard settings\n"&   -- submenu
+   " Joy button 2 - POTX|POTY\n"&
+   " Joy button 2 - polarity\n" & 
+   " MEGA65 KB Mapping\n"   &
+   "\n"                     &
+   " Back to main menu\n"   &
+   
    "\n"                     &
    " Close Menu\n";
 
@@ -399,21 +425,21 @@ constant OPTM_G_HDMI       : integer := 1;
 constant OPTM_G_Drive_A    : integer := 2;
 constant OPTM_G_Drive_B    : integer := 3;
 constant OPTM_G_CRT        : integer := 4;
-constant OPTM_G_Zoom       : integer := 5;
-constant OPTM_G_Audio      : integer := 6;
-constant OPTM_G_WP_A       : integer := 7;
-constant OPTM_G_WP_B       : integer := 8;
-constant OPTM_G_SL_4       : integer := 9;
-constant OPTM_G_SL_5       : integer := 10;
-constant OPTM_G_DISPLAY    : integer := 11;
-constant OPTM_G_CPU        : integer := 12;
-constant OPTM_G_ROMSW      : integer := 13;
-constant OPTM_G_PALMODE    : integer := 14;
-constant OPTM_G_COLPAL     : integer := 15;
-constant OPTM_G_LRT        : integer := 16;
-constant OPTM_G_POTPOL     : integer := 17; 
-constant OPTM_G_POTXY      : integer := 18;
-constant OPTM_G_KBMD       : integer := 19;
+constant OPTM_G_Audio      : integer := 5;
+constant OPTM_G_WP_A       : integer := 6;
+constant OPTM_G_WP_B       : integer := 7;
+constant OPTM_G_SL_4       : integer := 8;
+constant OPTM_G_SL_5       : integer := 9;
+constant OPTM_G_DISPLAY    : integer := 10;
+constant OPTM_G_CPU        : integer := 11;
+constant OPTM_G_ROMSW      : integer := 12;
+constant OPTM_G_PALMODE    : integer := 13;
+constant OPTM_G_COLPAL     : integer := 14;
+constant OPTM_G_LRT        : integer := 15;
+constant OPTM_G_POTPOL     : integer := 16; 
+constant OPTM_G_POTXY      : integer := 17;
+constant OPTM_G_KBMD       : integer := 18;
+constant OPTM_G_VGA_MODES  : integer := 19;
 
 -- !!! DO NOT TOUCH !!!
 type OPTM_GTYPE is array (0 to OPTM_SIZE - 1) of integer range 0 to 2**OPTM_GTC- 1;
@@ -428,12 +454,14 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_LINE,                              -- Line
     OPTM_G_Drive_A + OPTM_G_MOUNT_DRV + OPTM_G_START,        -- Drive A
     OPTM_G_Drive_B + OPTM_G_MOUNT_DRV,        -- Drive B
+    
     OPTM_G_SUBMENU,                           -- "Write Protect"
     OPTM_G_WP_A + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- Drive A wp toggle
     OPTM_G_WP_B + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- Drive B wp toggle
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
     OPTM_G_LINE,                              -- Line
+    
     OPTM_G_SUBMENU,                           --"Expansion Slots"
     OPTM_G_SL_4,                              -- Slot 4 - None
     OPTM_G_SL_4 + OPTM_G_STDSEL,              -- Slot 4 - Mockingboard - default slot 4.
@@ -443,7 +471,8 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_SL_5 + OPTM_G_STDSEL,              -- Slot 5 - Mouse - default slot 4
     OPTM_G_SL_5,                              -- Slot 5 - Saturn 5 - only in slot 5
     OPTM_G_LINE,                              -- Line
-    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu 
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+     
     OPTM_G_LINE,                              -- Line
     OPTM_G_SUBMENU,                           -- HDMI submenu block: START: "HDMI: %s"
     OPTM_G_LINE,                              -- Line
@@ -456,10 +485,11 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_HDMI,                              -- 600p 60 Hz
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE   + OPTM_G_SUBMENU,          -- Close submenu / back to main menu
+    
     OPTM_G_CRT     + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
-    OPTM_G_Zoom    + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_Audio   + OPTM_G_SINGLESEL,        -- On/Off toggle ("Single Select")
     OPTM_G_LINE,                              -- Line
+    
     OPTM_G_SUBMENU,                           --"Display Settings"
     OPTM_G_DISPLAY + OPTM_G_STDSEL,           -- Color
     OPTM_G_DISPLAY,                           -- Black & White
@@ -467,25 +497,42 @@ constant OPTM_GROUPS       : OPTM_GTYPE := (
     OPTM_G_DISPLAY,                           -- Amber
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+    
+    OPTM_G_SUBMENU,                           --"Core Settings"
+    OPTM_G_LRT + OPTM_G_SINGLESEL,            -- Low-res text
     OPTM_G_CPU + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- 65C02
     OPTM_G_ROMSW + OPTM_G_SINGLESEL + OPTM_G_STDSEL,-- Rom switch
     OPTM_G_PALMODE + OPTM_G_SINGLESEL,              -- PAL/NTSC switch
-    OPTM_G_SUBMENU,                           --"Colour Palette"
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
+    
+    OPTM_G_SUBMENU,                           --"Palette Settings"
     OPTM_G_COLPAL  + OPTM_G_STDSEL,           -- Original //e NTSC)
     OPTM_G_COLPAL,                            -- //gs             
     OPTM_G_COLPAL,                            -- AppleWin
-    OPTM_G_COLPAL,                            -- /c PAL
+    OPTM_G_COLPAL,                            -- //c PAL
     OPTM_G_LINE,                              -- Line
     OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
-    OPTM_G_LRT + OPTM_G_SINGLESEL,            -- Low-res text
-    OPTM_G_SUBMENU,                           --"Joystick Settings"
+    
+    OPTM_G_SUBMENU,                            
+    OPTM_G_VGA_MODES     + OPTM_G_STDSEL,
+    OPTM_G_LINE,
+    OPTM_G_TEXT,
+    OPTM_G_LINE,
+    OPTM_G_VGA_MODES,
+    OPTM_G_VGA_MODES,
+    OPTM_G_LINE,
+    OPTM_G_CLOSE         + OPTM_G_SUBMENU,
+    
+    OPTM_G_SUBMENU,                           --"Input Settings"
     OPTM_G_POTPOL + OPTM_G_SINGLESEL,         -- Potxy flip
-    OPTM_G_POTXY + OPTM_G_SINGLESEL,          -- Potx/Poty polarity 
+    OPTM_G_POTXY + OPTM_G_SINGLESEL,          -- Potx/Poty polarity
+    OPTM_G_KBMD + OPTM_G_SINGLESEL + OPTM_G_STDSEL,  -- MEGA65 KB mapping   
     OPTM_G_LINE,                              -- Line
-    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu
-    OPTM_G_KBMD + OPTM_G_SINGLESEL + OPTM_G_STDSEL,           -- MEGA65 KB mapping   
-    OPTM_G_LINE,                              -- Line   
-    OPTM_G_CLOSE                              -- Close Menu
+    OPTM_G_CLOSE + OPTM_G_SUBMENU,            -- close submenu  
+    
+    OPTM_G_LINE,                              -- Line
+    OPTM_G_CLOSE                              -- Close Menu  
 );
 
 --------------------------------------------------------------------------------------------------------------------
