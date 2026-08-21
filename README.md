@@ -1,67 +1,139 @@
-MiSTer2MEGA65
-=============
+# Apple IIe Core for MEGA65 (using the MiSTer2MEGA65 Framework)
 
-MiSTer2MEGA65 is a framework to simplify porting MiSTer cores to the MEGA65.
+A port of the Apple IIe FPGA reconstruction to the **MEGA65**, built on the **M2M framework**.  
+This core delivers a cycle‑accurate Apple IIe experience on modern MEGA65 hardware, including disk, audio, and expansion‑card support.
 
-![Title Image](doc/wiki/assets/MiSTer2MEGA65-Title.png)
+## Overview
 
-Learn more by
-[watching this YouTube video](https://youtu.be/9Ib7z64z9N4)
-and get started by reading the
-[MiSTer2MEGA65 Wiki](https://github.com/sy2002/MiSTer2MEGA65/wiki).
+This project adapts the MiST/MiSTer Apple IIe core for the MEGA65 architecture using the M2M hardware abstraction layer.  
+The original implementation was a VHDL reconstruction of a 1980s Apple ][+, later extended with //e features, language card, Mockingboard, and slot‑based expansions.
 
-TL;DR
------
+The MEGA65 version integrates these features while providing a modern OSD, stable disk I/O, and MEGA65‑native input/video/audio routing.
 
-1. Scroll up and press the "Use this template" button to start a new
-   MiSTer2MEGA65 project. Then fork the MiSTer core you want to port
-   and make it a Git submodule of your newly created project.
+## Credits:  
 
-2. Wrap the MiSTer core inside `CORE/vhdl/main.vhd` while
-   adjusting the clocks in `CORE/vhdl/clk.vhd`. Provide RAMs, ROMs and other
-   devices in `CORE/vhdl/mega65.vhd` and wire everything correctly.
+MiSTer2MEGA65 Framework - sy2002 & MJoergen  
+ * https://github.com/sy2002/MiSTer2MEGA65/
 
-3. Configure your core's behavior, including how the start screen looks like,
-   what ROMs should be loaded (and where to), the abilities of the
-   <kbd>Help</kbd> menu and more in `CORE/vhdl/config.vhd` and in
-   `CORE/vhdl/globals.vhd`.
+MiSTer Apple IIe Core - Sorgelig, Alanswx, Newsdee, Steven-a-wilson & birdybro  
+ * https://github.com/alanswx/Apple-II_MiSTer/  
+ * https://github.com/MiSTer-devel/Apple-II_MiSTer/  
 
-**DONE** your core is ported to MEGA65! :-)
+---
 
-*Obviously, this is a shameless exaggeration of how easy it is to work with
-MiSTer2MEGA65, but you get the gist of it.*
+## Features
 
-Getting started, detailed documentation and support
----------------------------------------------------
+- **Disk loading via OSD**  
+  Supports: `.nib` only at this stage
+  **Note:** Only `.nib` images persist disk writes.
 
-1. You might whant to start your journey
-  [here](https://github.com/sy2002/MiSTer2MEGA65/wiki/1.-What-is-MiSTer2MEGA65)
-  and then follow the reading track that is pointed out in the
-  respective chapters.
+- **Hard‑disk support**  
+  Support is planned   
 
-2. Run through this tutorial: https://files.mega65.org?ar=898d573b-d30d-4438-8893-09455bd16400
+- **MEGA65 Keyboard mapping**  
+  Supports MEGA65 key mapping or Apple II
 
-3. Choose the MiSTer core you want to port here: https://mister-devel.github.io/MkDocs_MiSTer/
+- **Tape loading** via ADC‑in  
+  Support is planned   
 
-4. Use [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) to do the actual work. The guide contains all steps "From Zero to Hero".
+- **Selectable CPU**  
+  6502 or 65C02
 
-Status of the framework
------------------------
+- **Custom video ROM loading**  
+  Default: US/UK character ROM
 
-**The MiSTer2MEGA (M2M) framework is stable and ready for being used.**
-The reference implementation of the M2M framework is the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65).
-Additionally there is already
-[a decent amount of cores](https://cores.mega65.org)
-that are based on the M2M framework. Head to the
-[Alternate MEGA65 cores](https://sy2002.github.io/m65cores/)
-website to learn more.
+- **Joystick support**  
+  Commodore or Atari style joysticks supported  
+  A second button is also supported via PotX/PotY
 
-[The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide)
-is very comprehensive - if you miss something or have questions, contact us on Discord.
+- **Mouse support**  
+  Amiga-compatible quadrature mice are supported through the MEGA65 joystick port 2.  
+  Commodore 1350 and 1351 mouse support is planned for a future release.
+  Atari ST mice - very feasible with another quadrature mapping.  
+  **Do not connect an original Apple II mouse to the MEGA65.** Although Apple II and Amiga mice use a similar connector, the Apple mouse has an electrically incompatible pinout, including different **+5 V and GND pin assignments**, and may damage the mouse or MEGA65.
 
-The [Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) is the reference implementation
-of the M2M framework and [The Ultimate MiSTer2MEGA65 Porting Guide](https://github.com/sy2002/MiSTer2MEGA65/wiki/The-Ultimate-MiSTer2MEGA65-Porting-Guide) uses it heavily to provide you with examples. Don't hesitate to take code snippets from the
-[Commodore 64 for MEGA65](https://github.com/MJoergen/C64MEGA65) for your own projects.
-nd join the
-[friendly MEGA65 community on Discord](https://discord.com/channels/719326990221574164/1177364456896999485).
+- **Display modes**  
+  Color, amber, green, monochrome  
+  Optional scanlines
+
+- **Color palette selection**  
+  NTSC //e, Apple IIgs, AppleWin  
+  **No custom palette supported yet**
+
+- **Memory & expansion cards**
+  - 64K base + 64K auxiliary RAM (80‑column + DHGR)
+  - Saturn 128K RAM expansion ( currently untested but enabled in the core )
+  - Language card
+  - ProDOS‑compatible clock card
+  - Super Serial Card ( currently untested but enabled in the core )
+  - Mockingboard Model A
+
+
+## Keyboard Shortcuts
+
+- **Restore**               — Closed Apple  
+- **MEGA**                  — Open Apple  
+- **MEGA+Ctrl+F13**         — Soft Reset
+- **MEGA+Ctrl+F13+Restore** — Memory Test 
+
+### MEGA65 Keyboard Mapping
+
+The optional **MEGA65 Keyboard Layout** remaps the Apple IIe keyboard to follow the symbols and legends printed on the physical MEGA65 keyboard. This makes typing considerably more intuitive than using the original Apple II key positions.
+
+Most keys produce the character shown on the keycap. **Shift** is used for the normal shifted legends, while **ALT** acts as a second modifier for symbols printed on the **front face of the MEGA65 keycaps**.
+
+#### ALT / Front-Face Symbols
+
+| MEGA65 Key | Output |
+|---|---|
+| `ALT` + `←` | `` ` `` |
+| `ALT` + `,` | `~` |
+| `ALT` + `.` | `\|` |
+| `ALT` + `/` | `\` |
+| `ALT` + `:` | `{` |
+| `ALT` + `;` | `}` |
+| `ALT` + `=` | `_` |
+
+#### Shifted Symbols
+
+The normal shifted mappings follow the MEGA65 keycap legends where applicable:
+
+| MEGA65 Key | Output |
+|---|---|
+| `Shift` + `:` | `[` |
+| `Shift` + `;` | `]` |
+
+Where the MEGA65 provides a dedicated key for a symbol, that key is used directly. For example, `+` has its own key, so `Shift` + `=` remains `+`. Similarly, `Shift` + `-` remains `-`, with `_` available using `ALT` + `=`.
+
+The MEGA65 `£/#` key maps to the equivalent Apple II `Shift` + `3` character. Whether this appears as `£` or `#` depends on the selected Apple II video/character ROM.
+
+The non-directional `↑` power-symbol key is currently unused in MEGA65 layout mode. The directional cursor keys are unaffected and retain their normal Apple II cursor functions.
+
+The original **Apple II Keyboard Layout** remains available through the OSD for users who prefer the original positional keyboard mapping.
+
+---
+
+## Apple II Slot Map
+
+| Slot | Device |
+|------|--------|
+| 0 | Language card |
+| 1 | Clock card (ProDOS compatible) |
+| 2 | Super Serial Card (untested) |
+| 3 | 80‑column + 64K RAM expansion |
+| 4 | Mockingboard Model A |
+| 5 | Saturn 128K RAM expansion (untested)|
+| 6 | Disk II controller |
+| 7 | HDD controller - (support planned) |
+
+---
+
+## A note about PoTX/PotY polarity
+
+**Note – Commodore Joysticks and Power-On Self-Test**
+
+When using a Commodore-style joystick with a second fire button connected through **POTX/POTY**, ensure that the **joy button 2 - polarity** setting in the OSD is correct.
+
+If the polarity is reversed, Button 2 may appear permanently pressed to the Apple II during startup. This is equivalent to holding the **Closed Apple** key while powering on the machine and can cause the Apple IIe to enter its built-in **Power-On Self-Test / RAM test** instead of booting normally.
+
+If the core unexpectedly starts the RAM test when a joystick is connected, change the **Button 2 Polarity** setting in the OSD and reset the core.
