@@ -24,7 +24,7 @@ MiSTer Apple IIe Core - Sorgelig, Alanswx, Newsdee, Steven-a-wilson & birdybro
 ## Features
 
 - **Disk loading via OSD**  
-  Supports: `.nib` only at this stage
+  Supports: `.nib` only at this stage  
   **Note:** Only `.nib` images persist disk writes.
 
 - **Hard‑disk support**  
