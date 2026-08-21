@@ -1,41 +1,23 @@
-YOUR PROJECT NAME for MEGA65 aka GITHUB REPO SHORT NAME
-=======================================================
+Mega //e  
+========
 
-done in YEAR by YOUR NAME
+done in 2026 by Muse  
+https://github.com/sho3string/
 
-YOUR WEBSITE
-YOUR GITHUB SITE
-
-REPO SHORT NAME is licensed under the terms of GNU/GPL v3, for more information please read the file LICENSE
+Apple-II-MEGA65 is licensed under the terms of GNU/GPL v3, for more information please read the file LICENSE
 Parts of REPO SHORT NAME are licensed under other Free-software licenses as described in the source code
 
-GITHUB REPO SHORT NAME:
------------------------
+Apple-II-MEGA65:
+----------------
 
-  GITHUB REPO SHORT NAME is a port of MISTER'S REPO SHORT NAME
-      done by the MiSTer Development Team
-      Original GitHub Repository: https://github.com/MiSTer-devel/MISTER-REPO-LINK
-      Significant contributors:
-      * NAME THE MAIN
-      * CONTRIBUTORS
-      * ON MiSTer's SIDE
+  Apple-II-MEGA65 is a port of Apple-II_MiSTer  
+      done by the MiSTer Development Team  
+      Original GitHub Repository: https://github.com/alanswx/Apple-II_MiSTer/ which is a fork of https://github.com/MiSTer-devel/Apple-II_MiSTer
+      Significant contributors:  Sorgelig, Alanswx  
 
-  MISTER'S REPO SHORT NAME is a port of MiST's MiST NAME/OTHER SOURCE IN CASE MiSTer ported it from MIST/OTHER SOURCE
-      done by the MiST Development Team
-      Original GitHub Repository: https://github.com/mist-devel/MIST-REPO-LINK OR OTHER SOURCE
-      Significant contributors:
-      * NAME THE MAIN
-      * CONTRIBUTORS
-      * ON MiST's SIDE (OR OTHER SOURCE)
 
-  LIST SOME MORE SIGNIFICANT / MAIN AUTHERS OF SUBMODULES
-  HAVE A LOOK AT THIS EXAMPLE HOW TO: https://github.com/sy2002/gbc4mega65/blob/master/AUTHORS
-
-Other than that and my own work, REPO SHORT NAME uses:
+Other than that and my own work, Apple-II-MEGA65 uses:
 ------------------------------------------------------
-
-DO NOT FORGET TO CREDIT EVERYTHING YOU USE FROM OTHER PEOPLE HERE
-THE FOLLOWING LIST NEEDS ALWAYS TO BE PART OF YOUR LIST:
   
   * MiSTer2MEGA65 by The MiSTer2MEGA65 Development Team
     https://github.com/sy2002/MiSTer2MEGA65
