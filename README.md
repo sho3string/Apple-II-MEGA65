@@ -74,6 +74,7 @@ MiSTer Apple IIe Core - Sorgelig, Alanswx, Newsdee, Steven-a-wilson & birdybro
 - **Restore**               — Closed Apple  
 - **MEGA**                  — Open Apple  
 - **MEGA+Ctrl+F13**         — Soft Reset
+- **MEGA+F13**              — Break
 - **MEGA+Ctrl+F13+Restore** — Memory Test 
 
 ### MEGA65 Keyboard Mapping
