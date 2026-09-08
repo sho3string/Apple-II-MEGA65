@@ -80,7 +80,67 @@ SUBMENU_SUMMARY XOR     R8, R8                  ; R8 = 0 = no custom string
 ;  R10: @TODO: Future release: Context (see CTX_* in sysdef.asm)
 ; Output:
 ;   R8: 0=do not filter file, i.e. show file
-FILTER_FILES    XOR     R8, R8                  ; R8 = 0 = do not filter file
+FILTER_FILES    INCRB
+
+                ; Always show directories
+                CMP     1, R9
+                RBRA    _FF_SHOW, Z
+
+                ; ------------------------------------------------------------
+                ; Apple II disk images:
+                ; Only show .NIB and .DSK
+                ;
+                ; R8 = filename in CAPITAL LETTERS
+                ; ------------------------------------------------------------
+
+                MOVE    R8, R0                  ; preserve filename pointer
+
+                ; Find filename length
+                SYSCALL(strlen, 1)              ; R9 = length
+
+                ; Need at least 4 characters for ".NIB" / ".DSK"
+                CMP     4, R9
+                RBRA    _FF_HIDE, N
+
+                ; R0 -> final four characters
+                ADD     R9, R0
+                SUB     4, R0
+
+                ; Both valid extensions begin with '.'
+                CMP     '.', @R0++
+                RBRA    _FF_HIDE, !Z
+
+                ; First extension character determines which one
+                CMP     'N', @R0
+                RBRA    _FF_NIB, Z
+
+                CMP     'D', @R0
+                RBRA    _FF_DSK, Z
+
+                RBRA    _FF_HIDE, 1
+
+                ; Check NIB
+_FF_NIB         ADD     1, R0
+                CMP     'I', @R0++
+                RBRA    _FF_HIDE, !Z
+                CMP     'B', @R0
+                RBRA    _FF_SHOW, Z
+                RBRA    _FF_HIDE, 1
+
+                ; Check DSK
+_FF_DSK         ADD     1, R0
+                CMP     'S', @R0++
+                RBRA    _FF_HIDE, !Z
+                CMP     'K', @R0
+                RBRA    _FF_SHOW, Z
+                RBRA    _FF_HIDE, 1
+
+_FF_HIDE        MOVE    1, R8                   ; non-zero = hide
+                RBRA    _FF_RET, 1
+
+_FF_SHOW        XOR     R8, R8                  ; zero = show
+
+_FF_RET         DECRB
                 RET
 
 ; PREP_LOAD_IMAGE callback function:
@@ -98,8 +158,70 @@ FILTER_FILES    XOR     R8, R8                  ; R8 = 0 = do not filter file
 ; Output:
 ;   R8: 0=OK, error code otherwise
 ;   R9: image type if R8=0, otherwise 0 or optional ptr to  error msg string
-PREP_LOAD_IMAGE XOR     R8, R8                  ; no errors
-                XOR     R9, R9                  ; image type hardcoded to 0
+PREP_LOAD_IMAGE INCRB
+
+                ; ------------------------------------------------------------
+                ; Determine Apple II disk image type from file size.
+                ;
+                ; R8 = open FAT32 file handle
+                ;
+                ; Return:
+                ;   R8 = 0 : OK
+                ;   R9 = 0 : NIB
+                ;   R9 = 1 : DSK
+                ; ------------------------------------------------------------
+
+                MOVE    R8, R0                  ; preserve file handle
+
+                ; Read file size low word
+                ADD     FAT32$FDH_SIZE_LO, R0
+                MOVE    @R0, R1
+
+                ; Restore handle and read high word
+                MOVE    R8, R0
+                ADD     FAT32$FDH_SIZE_HI, R0
+                MOVE    @R0, R2
+
+                ; ------------------------------------------------------------
+                ; Standard NIB:
+                ; $00038E00 = 232960 bytes
+                ; ------------------------------------------------------------
+
+                CMP     0x0003, R2
+                RBRA    _PLI_CHECK_DSK, !Z
+
+                CMP     0x8E00, R1
+                RBRA    _PLI_CHECK_DSK, !Z
+
+                XOR     R8, R8                  ; success
+                XOR     R9, R9                  ; image type 0 = NIB
+                RBRA    _PLI_RET, 1
+
+
+                ; ------------------------------------------------------------
+                ; Standard DSK:
+                ; $00023000 = 143360 bytes
+                ; ------------------------------------------------------------
+
+_PLI_CHECK_DSK  CMP     0x0002, R2
+                RBRA    _PLI_BAD, !Z
+
+                CMP     0x3000, R1
+                RBRA    _PLI_BAD, !Z
+
+                XOR     R8, R8                  ; success
+                MOVE    1, R9                   ; image type 1 = DSK
+                RBRA    _PLI_RET, 1
+
+
+                ; ------------------------------------------------------------
+                ; Unsupported / malformed image
+                ; ------------------------------------------------------------
+
+_PLI_BAD        MOVE    1, R8                   ; non-zero error
+                XOR     R9, R9
+
+_PLI_RET        DECRB
                 RET
 
 ; ----------------------------------------------------------------------------

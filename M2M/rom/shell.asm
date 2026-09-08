@@ -724,6 +724,11 @@ _LI_FOPEN_OK    MOVE    R5, R8
                 MOVE    R9, R7                  ; R7: img type or error msg
                 CMP     0, R6                   ; everything OK?
                 RBRA    _LI_FREAD_RET, !Z       ; no
+				
+				; TEMP DEBUG: print detected image type
+                MOVE    R7, R8
+                SYSCALL(puthex, 1)
+                SYSCALL(crlf, 1)
 
                 ; For showing a progress bar: Take the remaining size of the
                 ; file, which is filesize minus current read position after
