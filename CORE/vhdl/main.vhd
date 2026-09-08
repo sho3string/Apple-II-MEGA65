@@ -236,6 +236,16 @@ architecture synthesis of main is
     
     signal mega65_alt           : std_logic;
     signal mega65_caps          : std_logic;
+    
+    signal drive1_img_type : std_logic_vector(1 downto 0) := "00";
+    signal drive2_img_type : std_logic_vector(1 downto 0) := "00";
+    
+    signal dbg_dsk1_seen  : std_logic;
+    signal dbg_dsk1_start : std_logic;
+    signal dbg_dsk1_done  : std_logic;
+    
+    signal dbg_led_counter : unsigned(23 downto 0) := (others => '0');
+    
    
     constant C_MENU_FD_A           : integer := 5;
     constant C_MENU_FD_B           : integer := 6;
@@ -303,6 +313,23 @@ begin
    pot_pol_sw             <= osm_control_i(C_MENU_POTPOL);
    potxy_sw               <= osm_control_i(C_MENU_POTXY);
    mega65_layout_main_i   <= '1' when osm_control_i(C_MENU_KBMODE) else '0';
+   
+   drive_led_o <=
+   '1'                    when dbg_dsk1_done  = '1' else
+   dbg_led_counter(23)    when dbg_dsk1_start = '1' else
+   dbg_led_counter(21)    when dbg_dsk1_seen  = '1' else
+   '0';
+   
+   debug_led_counter_proc : process(clk_main_i)
+    begin
+       if rising_edge(clk_main_i) then
+          if reset_core_n = '0' then
+             dbg_led_counter <= (others => '0');
+          else
+             dbg_led_counter <= dbg_led_counter + 1;
+          end if;
+       end if;
+    end process;
    
    -- quadrature-to-delta converter between MEGA65 port 2 and apple2_top
     mouse_proc : process(clk_main_i)
@@ -811,6 +838,7 @@ begin
         track        => TRACK1,
         busy         => TRACK1_RAM_BUSY,
         change       => disk_change(0),
+        img_type     => drive1_img_type,
         mount        => vdrives_mounted(0),
         ready        => DISK_READY(0),
         active       => D1_ACTIVE,
@@ -823,7 +851,12 @@ begin
         sd_lba       => sd_lba(0),
         sd_rd        => sd_rd(0),
         sd_wr        => sd_wr(0),
-        sd_ack       => sd_ack(0)	
+        sd_ack       => sd_ack(0),
+        
+        dbg_dsk_seen  => open,
+        dbg_dsk_start => open,
+        dbg_dsk_done  => open
+        	
    );
    
    
@@ -841,6 +874,7 @@ begin
         track        => TRACK2,
         busy         => TRACK2_RAM_BUSY,
         change       => disk_change(1),
+        img_type     => drive2_img_type,
         mount        => vdrives_mounted(1),
         ready        => DISK_READY(1),
         active       => D2_ACTIVE,
@@ -853,9 +887,75 @@ begin
         sd_lba       => sd_lba(1),
         sd_rd        => sd_rd(1),
         sd_wr        => sd_wr(1),
-        sd_ack       => sd_ack(1)	
+        sd_ack       => sd_ack(1),
+        
+        dbg_dsk_seen  => open,
+        dbg_dsk_start => open,
+        dbg_dsk_done  => open
    );
    
+-------------------------------------------------------------------------------
+-- Latch disk image type per drive
+--
+-- img_type is shared by the framework and is only valid for the drive whose
+-- img_mounted bit is being strobed.
+--
+-- 00 = NIB
+-- 01 = DSK
+-------------------------------------------------------------------------------
+
+    -------------------------------------------------------------------------------
+-- Latch disk image type per drive
+--
+-- img_mounted and img_type cross from QNICE through separate CDC paths.
+-- Therefore do NOT capture img_type only on the first cycle of img_mounted.
+-- Keep updating it for the entire duration of the mount strobe.
+--
+-- 00 = NIB
+-- 01 = DSK
+-------------------------------------------------------------------------------
+
+   latch_image_type : process(clk_main_i)
+    begin
+       if rising_edge(clk_main_i) then
+    
+          if reset_core_n = '0' then
+             drive1_img_type <= "00";
+             drive2_img_type <= "00";
+    
+          else
+    
+             -----------------------------------------------------------------------
+             -- Drive 1
+             -----------------------------------------------------------------------
+    
+             if img_mounted(0) = '1' then
+                if img_size = x"00000000" then
+                   drive1_img_type <= "00";
+                else
+                   drive1_img_type <= img_type;
+                end if;
+    
+             end if;
+    
+    
+             -----------------------------------------------------------------------
+             -- Drive 2
+             -----------------------------------------------------------------------
+    
+             if G_VDNUM > 1 then    
+                if img_mounted(1) = '1' then
+                   if img_size = x"00000000" then
+                      drive2_img_type <= "00";
+                   else
+                      drive2_img_type <= img_type;
+                   end if;
+                end if;
+             end if;
+          end if;
+       end if;
+    end process;
+       
    
    -- to do
    /*

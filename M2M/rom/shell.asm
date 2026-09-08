@@ -720,10 +720,17 @@ _LI_FOPEN_OK    MOVE    R5, R8
                 MOVE    SF_CONTEXT_DATA, R10
                 MOVE    @R10, R10
                 RSUB    PREP_LOAD_IMAGE, 1
-                MOVE    R8, R6                  ; R6: error code=0 (means OK)
-                MOVE    R9, R7                  ; R7: img type or error msg
-                CMP     0, R6                   ; everything OK?
-                RBRA    _LI_FREAD_RET, !Z       ; no
+				MOVE    R8, R6                  ; status
+				MOVE    R9, R7                  ; image type / error ptr
+				CMP     0, R6
+				RBRA    _LI_FREAD_RET, !Z
+
+				; In virtual-drive mode preserve the image type.
+				; R6/R7 are reused below by the progress-bar code.
+				CMP     0, R4
+				RBRA    _LI_TYPE_SAVED, !Z
+				MOVE    R7, R12                 ; R12 = disk image type
+_LI_TYPE_SAVED
 				
 				; TEMP DEBUG: print detected image type
                 MOVE    R7, R8
@@ -875,11 +882,13 @@ _LI_FREAD_CONT2 CMP     R3, R2                  ; end of 4k page reached?
                 RBRA    _LI_FREAD_NXTWN, 1      ; set next window
 
                 ; End of file reached
-_LI_FREAD_EOF   XOR     R6, R6                  ; R6 and R7 are status flags
-                XOR     R7, R7                  ; 0 means all good
-                CMP     0, R4                   ; disk image mode?
-                RBRA    _LI_FREAD_PM, !Z        ; no
-                MOVE    LOG_STR_LOADOK, R8      ; yes
+_LI_FREAD_EOF   XOR     R6, R6
+                CMP     0, R4
+                RBRA    _LI_FREAD_PM, !Z
+
+                MOVE    R12, R7             ; restore disk image type
+
+                MOVE    LOG_STR_LOADOK, R8
                 SYSCALL(puts, 1)
                 RBRA    _LI_FREAD_RET, 1
 
