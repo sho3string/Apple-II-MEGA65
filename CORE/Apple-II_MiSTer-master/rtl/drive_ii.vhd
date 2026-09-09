@@ -135,7 +135,12 @@ begin
       TRACK_WE <= '0';
 
       CLK_2M_D <= CLK_2M;
-      if CLK_2M = '1' and CLK_2M_D = '0' and DISK_READY = '1' and DISK_ACTIVE = '1' then
+      --if CLK_2M = '1' and CLK_2M_D = '0' and DISK_READY = '1' and DISK_ACTIVE = '1' then
+      if CLK_2M = '1' and CLK_2M_D = '0'
+           and DISK_READY = '1'
+           and DISK_ACTIVE = '1'
+           and TRACK_BUSY = '0'
+       then
         byte_delay := byte_delay - 1;
 
         if WRITE_MODE = '0' then
