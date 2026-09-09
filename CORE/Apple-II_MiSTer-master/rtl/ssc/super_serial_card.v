@@ -145,20 +145,32 @@ ssc_rom rom (.clk(CLK_14M),.addr(ROM_ADDR),.data(DOA_C8S));
 //  Serial Port
 //
 
-reg     [4:0]           CLK_6551;
-// 14.31818
-// 50 MHz / 27 = 1.852 MHz
+
+(* ASYNC_REG = "TRUE" *) reg reset_50m_ff1 = 1'b1;
+(* ASYNC_REG = "TRUE" *) reg reset_50m_ff2 = 1'b1;
+
 always @(posedge CLK_50M)
 begin
-        if(RESET)
+    reset_50m_ff1 <= RESET;
+    reset_50m_ff2 <= reset_50m_ff1;
+end
+
+wire reset_50m = reset_50m_ff2;
+
+reg [4:0] CLK_6551;
+
+always @(posedge CLK_50M)
+begin
+    if (reset_50m)
+        CLK_6551 <= 5'd0;
+    else begin
+        case (CLK_6551)
+            5'd26:
                 CLK_6551 <= 5'd0;
-        else
-                case(CLK_6551)
-                5'd26:
-                        CLK_6551 <= 5'd0;
-                default:
-                        CLK_6551 <= CLK_6551 + 1'b1;
-                endcase
+            default:
+                CLK_6551 <= CLK_6551 + 1'b1;
+        endcase
+    end
 end
 
 assign IRQ_N = SER_IRQ;

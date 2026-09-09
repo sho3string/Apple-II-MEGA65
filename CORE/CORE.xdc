@@ -14,3 +14,67 @@
 create_generated_clock -name main_clk      [get_pins CORE/clk_gen/i_clk_main/CLKOUT0]
 # Add more clocks here, if needed
 
+# ==========================================================================
+# Apple II floppy_track CDC exceptions
+#
+# These paths intentionally cross between main_clk and qnice_clk through
+# explicit two-stage synchronizers.
+#
+# Cut timing only TO the first synchronizer stage.
+# FF1 -> FF2 remains timed normally.
+# ==========================================================================
+
+# --------------------------------------------------------------------------
+# main/core clock -> qnice/sd clock
+# --------------------------------------------------------------------------
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/reset_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/change_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/mount_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/active_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/track_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/img_type_sd_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/dirty_sd_ff1_reg*/D
+}]
+
+
+# --------------------------------------------------------------------------
+# qnice/sd clock -> main/core clock
+# --------------------------------------------------------------------------
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/ready_core_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/busy_core_ff1_reg*/D
+}]
+
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *i_floppy_track_*/clear_dirty_ff1_reg*/D
+}]
+
+# Super Serial Card RESET -> CLK_50M synchronizer
+# Async source -> first synchronizer stage only.
+set_false_path -to [get_pins -hier -filter {
+    NAME =~ *ssc/reset_50m_ff1_reg*/D
+}]
