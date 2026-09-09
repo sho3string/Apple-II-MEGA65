@@ -76,7 +76,7 @@ type WHS_RECORD_ARRAY_TYPE is array (0 to WHS_RECORDS - 1) of WHS_RECORD_TYPE;
 
 constant SCR_WELCOME : string :=
 
-    "\n MEGA //e Core V1.0\n\n" &
+    "\n MEGA //e Core V2.0\n\n" &
    " by Muse\n" &
    " Powered by MiSTer2MEGA65 v2.0.1\n\n\n" &
    " Original MiSTer core contributers\n" &
@@ -259,7 +259,7 @@ constant SEL_CORENAME      : std_logic_vector(15 downto 0) := x"0200";
 
 -- Currently this is only used in the debug console. Use the welcome screen and the
 -- help system to display the name and version of your core to the end user
-constant CORENAME          : string := "Apple //e V1.0";
+constant CORENAME          : string := "Apple //e V2.0";
 
 --------------------------------------------------------------------------------------------------------------------
 -- "Help" menu / Options menu  (Selectors 0x0300 .. 0x0312): DO NOT TOUCH

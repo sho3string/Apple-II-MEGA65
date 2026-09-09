@@ -3,7 +3,7 @@
 <!--                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.   -->
 
-<Project Version="7" Minor="61" Path="/mnt/hgfs/GitHub/Apple-II-MEGA65/CORE/CORE-R6.xpr">
+<Project Version="7" Minor="61" Path="/mnt/hgfs/Github/Apple-II-MEGA65/CORE/CORE-R6.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
     <Option Name="Id" Val="926450cd97ce43fe9c0a128c0d719455"/>
@@ -194,6 +194,13 @@
         </FileInfo>
       </File>
       <File Path="$PPRDIR/../M2M/vhdl/controllers/MiSTer/csync.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/dsk2nib.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>
           <Attr Name="UsedIn" Val="implementation"/>
@@ -943,6 +950,13 @@
     </FileSet>
     <FileSet Name="sim" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim" RelGenDir="$PGENDIR/sim">
       <Filter Type="Srcs"/>
+      <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/dsk2nib.sv">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+          <Attr Name="UsedIn" Val="simulation"/>
+        </FileInfo>
+      </File>
       <Config>
         <Option Name="DesignMode" Val="RTL"/>
         <Option Name="TopModule" Val="mega65_r6"/>
@@ -1007,12 +1021,11 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="hdd_sector_bram_synth_1" Type="Ft3:Synth" SrcSet="hdd_sector_bram" Part="xc7a200tfbg484-2" ConstrsSet="hdd_sector_bram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/hdd_sector_bram_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_synth_1">
+    <Run Id="hdd_sector_bram_synth_1" Type="Ft3:Synth" SrcSet="hdd_sector_bram" Part="xc7a200tfbg484-2" ConstrsSet="hdd_sector_bram" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/hdd_sector_bram_synth_1">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2022"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2022"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
