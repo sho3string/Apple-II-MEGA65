@@ -1,7 +1,22 @@
+
+
+Version 2 -  Sep 9, 2026
+========================
+
+Mega //e for the MEGA65 version 2 is based on this version 2.0.1 of the MiSTer2MEGA65 framework.
+
+
+## Features
+ * See README.MD
+
+## Whats new  
+ * Core now supports .DSK disk images ( read only at this stage )  
+
+
 Version 1 - August 21, 2026
 ===========================
 
-Mega//e for the MEGA65 version 1 is based on this version 2.0.1 of the MiSTer2MEGA65 framework.
+Mega //e for the MEGA65 version 1 is based on this version 2.0.1 of the MiSTer2MEGA65 framework.
 
 
 ## Features
