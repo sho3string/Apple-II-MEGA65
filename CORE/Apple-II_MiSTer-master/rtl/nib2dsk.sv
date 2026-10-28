@@ -1,9 +1,10 @@
 
 // Apple II 16-sector NIB -> DOS-order DSK track decoder.
-// Standalone first-stage implementation; not yet wired to floppy_track.
+// Standalone partial-sector implementation; not yet wired to floppy_track.
 // Input: synchronous 6656-byte NIB RAM, output: 4096-byte DSK RAM writes.
-// Output RAM must not be committed to SD unless done && !error &&
-// sector_mask == 16'hffff. Each sector is written only after validation.
+// sector_mask identifies validated sectors. Unmarked sectors are never written.
+// error flags rejected/corrupt sector data; incomplete coverage alone is not an error.
+// Output writes must target a staging buffer until the track scan completes.
 
 `timescale 1ns/1ps
 
@@ -210,10 +211,16 @@ module nib2dsk (
                 end
                 DECODE_CHECK: begin
                     if (!decode_ok || gcr_symbol_check[6] ||
-                        gcr_symbol_check[5:0] != last_symbol ||
-                        sector_mask[pending_sector]) begin
+                        gcr_symbol_check[5:0] != last_symbol) begin
+                        // Reject this sector, but keep scanning for other
+                        // valid sectors. Never assert dsk_we for bad data.
                         error <= 1;
-                        state <= FINISH;
+                        if (scanned >= 13'd6656) state <= FINISH;
+                        else state <= REQ;
+                    end else if (sector_mask[pending_sector]) begin
+                        // Duplicate sector: first validated copy wins.
+                        if (scanned >= 13'd6656) state <= FINISH;
+                        else state <= REQ;
                     end else begin
                         soft_sector <= logical_to_soft(pending_sector);
                         idx <= 0;
@@ -240,7 +247,6 @@ module nib2dsk (
                 FINISH: begin
                     busy <= 0;
                     done <= 1;
-                    if (sector_mask != 16'hffff) error <= 1;
                     state <= IDLE;
                 end
                 default: state <= IDLE;
