@@ -997,6 +997,7 @@
       </Config>
     </FileSet>
     <FileSet Name="sim_nib2dsk" Type="SimulationSrcs" RelSrcDir="$PSRCDIR/sim_nib2dsk">
+      <Filter Type="Srcs"/>
       <File Path="$PPRDIR/Apple-II_MiSTer-master/rtl/nib2dsk.sv">
         <FileInfo>
           <Attr Name="UsedIn" Val="synthesis"/>

@@ -217,7 +217,7 @@ module nib2dsk (
                         error <= 1;
                         if (scanned >= 13'd6656) state <= FINISH;
                         else state <= REQ;
-                    end else if (sector_mask[pending_sector]) begin
+                    end else if (sector_mask[logical_to_soft(pending_sector)]) begin
                         // Duplicate sector: first validated copy wins.
                         if (scanned >= 13'd6656) state <= FINISH;
                         else state <= REQ;
@@ -239,7 +239,7 @@ module nib2dsk (
                     dsk_data <= decoded_byte;
                     dsk_we <= 1;
                     if (idx == 255) begin
-                        sector_mask[pending_sector] <= 1;
+                        sector_mask[soft_sector] <= 1;
                         if (scanned >= 13'd6656) state <= FINISH;
                         else state <= REQ;
                     end else idx <= idx + 1'b1;
