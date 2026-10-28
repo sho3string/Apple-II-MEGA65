@@ -23,8 +23,9 @@ module nib2dsk (
     output reg [15:0] sector_mask
 );
     localparam IDLE=0, REQ=1, WAIT_RAM=2, CONSUME=3,
-               DECODE=4, OUTPUT=5, FINISH=6;
-    reg [2:0] state;
+               DECODE_SECONDARY=4, OUTPUT=5, FINISH=6,
+               DECODE_PRIMARY=7, DECODE_CHECK=8;
+    reg [3:0] state;
     reg [2:0] return_state;
     reg [12:0] scan_pos;
     reg [12:0] read_pos;
@@ -44,8 +45,11 @@ module nib2dsk (
     reg [7:0] decoded_byte;
     reg [7:0] checksum;
     reg decode_ok;
+    wire [6:0] gcr_symbol_secondary = untranslate(encoded[idx]);
+    wire [6:0] gcr_symbol_primary = untranslate(encoded[9'd86 + idx]);
+    wire [6:0] gcr_symbol_check = untranslate(encoded[342]);
     reg [3:0] soft_sector;
-    integer i, j, k;
+    integer j, k;
 
     // Reverse of the 64-entry Disk II 6-and-2 GCR translation table.
     function automatic [6:0] untranslate(input [7:0] value);
@@ -115,6 +119,7 @@ module nib2dsk (
             prev1 <= 0; prev2 <= 0; mode <= 0; field_idx <= 0;
             pending_valid <= 0; pending_sector <= 0;
             idx <= 0;
+            last_symbol <= 0; decode_ok <= 0;
         end else begin
             dsk_we <= 0;
             done <= 0;
@@ -168,7 +173,10 @@ module nib2dsk (
                         if (field_idx == 342) begin
                             mode <= 0;
                             pending_valid <= 0;
-                            state <= DECODE;
+                            idx <= 0;
+                            last_symbol <= 0;
+                            decode_ok <= 1;
+                            state <= DECODE_SECONDARY;
                         end else field_idx <= field_idx + 1'b1;
                     end
                     prev2 <= prev1;
@@ -180,25 +188,30 @@ module nib2dsk (
                             state <= REQ;
                     end
                 end
-                DECODE: begin
-                    // XOR chain: 86 secondary symbols, 256 primary symbols,
-                    // one final checksum symbol.
-                    decode_ok = 1;
-                    last_symbol = 0;
-                    for (i=0; i<86; i=i+1) begin
-                        if ((untranslate(encoded[i]) > 63)) decode_ok = 0;
-                        last_symbol = last_symbol ^ untranslate(encoded[i]);
-                        secondary[i] = {2'b00,last_symbol};
-                    end
-                    for (i=0; i<256; i=i+1) begin
-                        if ((untranslate(encoded[86+i]) > 63)) decode_ok = 0;
-                        last_symbol = last_symbol ^ untranslate(encoded[86+i]);
-                        primary[i] = {2'b00,last_symbol};
-                    end
-                    if ((untranslate(encoded[342]) > 63) ||
-                        (untranslate(encoded[342]) != last_symbol)) decode_ok = 0;
-                    if (sector_mask[pending_sector]) decode_ok = 0;
-                    if (!decode_ok) begin
+                // Decode one 6-and-2 GCR symbol per clock. This avoids
+                // a 342-symbol combinational XOR chain in synthesis.
+                DECODE_SECONDARY: begin
+                    if (gcr_symbol_secondary[6]) decode_ok <= 0;
+                    secondary[idx] <= {2'b00, (last_symbol ^ gcr_symbol_secondary[5:0])};
+                    last_symbol <= last_symbol ^ gcr_symbol_secondary[5:0];
+                    if (idx == 85) begin
+                        idx <= 0;
+                        state <= DECODE_PRIMARY;
+                    end else idx <= idx + 1'b1;
+                end
+                DECODE_PRIMARY: begin
+                    if (gcr_symbol_primary[6]) decode_ok <= 0;
+                    primary[idx] <= {2'b00, (last_symbol ^ gcr_symbol_primary[5:0])};
+                    last_symbol <= last_symbol ^ gcr_symbol_primary[5:0];
+                    if (idx == 255) begin
+                        idx <= 0;
+                        state <= DECODE_CHECK;
+                    end else idx <= idx + 1'b1;
+                end
+                DECODE_CHECK: begin
+                    if (!decode_ok || gcr_symbol_check[6] ||
+                        gcr_symbol_check[5:0] != last_symbol ||
+                        sector_mask[pending_sector]) begin
                         error <= 1;
                         state <= FINISH;
                     end else begin
