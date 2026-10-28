@@ -21,3 +21,27 @@ M2M/rom/*.lis
 M2M/rom/*.out
 M2M/rom/*.rom
 M2M/video_filters/*.out
+
+# Vivado generated files
+*.cache/
+*.hw/
+*.sim/
+*.ip_user_files/
+*.runs/
+*.gen/
+*.Xil/
+
+# Vivado logs and simulation output
+*.wdb
+*.wcfg
+*.jou
+*.log
+*.pb
+*.str
+
+# Vivado generated IP output
+*.dcp
+*_sim_netlist.v
+*_sim_netlist.vhdl
+*_stub.v
+*_stub.vhdl
